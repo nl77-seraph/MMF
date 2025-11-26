@@ -10,6 +10,9 @@ import torch.nn.functional as F
 from typing import List, Dict, Tuple, Optional
 import sys
 import os
+import random
+from einops.layers.torch import Rearrange
+import numpy as np
 from utils.misc import is_main_process
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from dynamic_conv1d import FeatureReweightingModule
@@ -17,38 +20,94 @@ from dynamic_conv1d import FeatureReweightingModule
 
 import torch.distributed as dist
 
-
-class SEBlock(nn.Module):
-    """
-    Squeeze-and-Excitation Block (通道注意力)
-    用于增强重要通道，抑制不重要通道
-    """
-    
-    def __init__(self, channels: int, reduction: int = 16):
-        super(SEBlock, self).__init__()
-        self.squeeze = nn.AdaptiveAvgPool1d(1)
-        self.excitation = nn.Sequential(
-            nn.Linear(channels, channels // reduction, bias=False),
-            nn.ReLU(inplace=True),
-            nn.Linear(channels // reduction, channels, bias=False),
-            nn.Sigmoid()
+class ConvBlock1d(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size, dilation=1):
+        super(ConvBlock1d, self).__init__()
+        self.net = nn.Sequential(
+            nn.Conv1d(in_channels=in_channels, out_channels=out_channels,kernel_size=kernel_size,dilation=dilation, padding="same"),
+            nn.BatchNorm1d(out_channels),
+            nn.ReLU(),
+            nn.Conv1d(in_channels=out_channels, out_channels=out_channels,kernel_size=kernel_size,dilation=dilation, padding="same"),
+            nn.BatchNorm1d(out_channels),
+            nn.ReLU()
         )
-    
-    def forward(self, x):
-        """
-        Args:
-            x: (batch, channels, length)
-        Returns:
-            重加权后的特征
-        """
-        b, c, _ = x.size()
-        # Squeeze: 全局平均池化
-        y = self.squeeze(x).view(b, c)
-        # Excitation: 学习通道权重
-        y = self.excitation(y).view(b, c, 1)
-        # Scale: 重加权
-        return x * y.expand_as(x)
+        self.downsample = nn.Conv1d(in_channels, out_channels, 1) if in_channels != out_channels else None
+        if self.downsample is not None:
+            self.downsample.weight.data.normal_(0, 0.01)
+        self.last_relu = nn.ReLU()
 
+    def forward(self, x):
+        out = self.net(x)
+        res = x if self.downsample is None else self.downsample(x)
+        return self.last_relu(out + res)
+
+
+class LocalProfiling(nn.Module):
+    """ Local Profiling module in ARES """
+    def __init__(self):
+        super(LocalProfiling, self).__init__()
+        
+        self.net = nn.Sequential(
+            ConvBlock1d(in_channels=1, out_channels=32, kernel_size=7),
+            nn.MaxPool1d(kernel_size=8, stride=4),
+            nn.Dropout(p=0.1),
+            ConvBlock1d(in_channels=32, out_channels=64, kernel_size=7),
+            nn.MaxPool1d(kernel_size=8, stride=4),
+            nn.Dropout(p=0.1),
+            ConvBlock1d(in_channels=64, out_channels=128, kernel_size=7),
+            nn.MaxPool1d(kernel_size=8, stride=4),
+            nn.Dropout(p=0.1),
+            ConvBlock1d(in_channels=128, out_channels=256, kernel_size=7),
+            nn.MaxPool1d(kernel_size=8, stride=4),
+            nn.Dropout(p=0.1),
+        )
+
+    def forward(self, x):
+        x = self.net(x)
+        return x
+
+
+class ARESBackbone(nn.Module):
+    """
+    集成 ARES 的分段处理流程：
+    Roll -> Dividing -> LocalProfiling(CNN) -> Combination
+    """
+    def __init__(self, in_channels=1, num_segments=4, roll_max=2500):
+        super(ARESBackbone, self).__init__()
+        
+        self.num_segments = num_segments
+        self.roll_max = roll_max
+        
+        # 1. 分段: (Batch, Channel, Segments*P) -> (Batch*Segments, Channel, P)
+        self.dividing = Rearrange('b c (n p) -> (b n) c p', n=num_segments)
+        
+        # 2. 局部特征提取 (CNN)
+        self.profiling = LocalProfiling(in_channels=in_channels)
+        
+        # 3. 合并: (Batch*Segments, Channel, P_out) -> (Batch, Channel, Segments*P_out)
+        self.combination = Rearrange('(b n) c p -> b c (n p)', n=num_segments)
+        
+        self.out_channels = self.profiling.out_channels # 256
+
+    def forward(self, x):
+        # 1. 随机平移增强 (仅训练阶段启用)
+        # 这对 Multi-tab 场景非常重要，模拟截取位置的随机性
+        if self.training and self.roll_max > 0:
+            shift = np.random.randint(0, 1 + self.roll_max)
+            x = torch.roll(x, shifts=shift, dims=-1)
+        
+        # 2. 分段
+        # 注意：输入长度必须能被 num_segments 整除，否则 Rearrange 会报错
+        # 通常 20000 / 4 = 5000，是可以整除的
+        x = self.dividing(x)
+        
+        # 3. 提取特征
+        x = self.profiling(x)
+        
+        # 4. 合并回序列
+        x = self.combination(x)
+        
+        return x
 
 class ShotAttentionFusion(nn.Module):
     """
@@ -93,197 +152,24 @@ class ShotAttentionFusion(nn.Module):
         else:
             raise ValueError(f"Unexpected input shape: {x.shape}")
 
-
-class DFBlock(nn.Module):
-    """DF网络的单个Block (与原版相同)"""
-    
-    def __init__(self, in_channels: int, out_channels: int, 
-                 kernel_size: int = 8, pool_size: int = 8, 
-                 pool_stride: int = 4, dropout: float = 0.5,
-                 activation: str = 'relu', use_se: bool = False):
-        super(DFBlock, self).__init__()
-        
-        # 第一个卷积层
-        self.conv1 = nn.Conv1d(in_channels=in_channels, 
-                              out_channels=out_channels,
-                              kernel_size=kernel_size,
-                              stride=1, 
-                              padding=kernel_size // 2)
-        self.bn1 = nn.BatchNorm1d(num_features=out_channels)
-        
-        # 第二个卷积层
-        self.conv2 = nn.Conv1d(in_channels=out_channels, 
-                              out_channels=out_channels, 
-                              kernel_size=kernel_size,
-                              stride=1, 
-                              padding=kernel_size // 2)
-        self.bn2 = nn.BatchNorm1d(num_features=out_channels)
-        
-        # 池化和dropout
-        self.pool = nn.MaxPool1d(kernel_size=pool_size, 
-                                stride=pool_stride, 
-                                padding=pool_size // 2)
-        self.dropout = nn.Dropout(p=dropout)
-        
-        # 激活函数
-        if activation == 'elu':
-            self.activation1 = nn.ELU(alpha=1.0)
-            self.activation2 = nn.ELU(alpha=1.0)
-        else:
-            self.activation1 = nn.ReLU()
-            self.activation2 = nn.ReLU()
-        
-        # 可选的SE Block
-        self.use_se = use_se
-        if use_se:
-            self.se = SEBlock(out_channels, reduction=16)
-    
-    def forward(self, x):
-        # 第一个卷积块
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.activation1(x)
-        
-        # 第二个卷积块
-        x = self.conv2(x)
-        x = self.bn2(x)
-        x = self.activation2(x)
-        
-        # 可选的SE注意力
-        if self.use_se:
-            x = self.se(x)
-        
-        # 池化和dropout
-        x = self.pool(x)
-        x = self.dropout(x)
-        
-        return x
-
-
-class DFFeatureExtractor(nn.Module):
-    """基于DF网络的特征提取器 (可选增强版)"""
-    
-    def __init__(self, dropout: float = 0.5, use_se: bool = False):
-        super(DFFeatureExtractor, self).__init__()
-        
-        # DF网络参数(与原始DF网络保持一致)
-        self.filter_nums = [32, 64, 128, 256]
-        self.kernel_size = 8
-        self.pool_sizes = [8, 8, 8, 8]
-        self.pool_strides = [4, 4, 4, 4]
-        self.use_se = use_se
-        
-        # 构建4个Block
-        self.block1 = DFBlock(1, self.filter_nums[0], 
-                             self.kernel_size, self.pool_sizes[0], 
-                             self.pool_strides[0], dropout, 'elu', use_se)
-        
-        self.block2 = DFBlock(self.filter_nums[0], self.filter_nums[1], 
-                             self.kernel_size, self.pool_sizes[1], 
-                             self.pool_strides[1], dropout, 'relu', use_se)
-        
-        self.block3 = DFBlock(self.filter_nums[1], self.filter_nums[2], 
-                             self.kernel_size, self.pool_sizes[2], 
-                             self.pool_strides[2], dropout, 'relu', use_se)
-        
-        self.block4 = DFBlock(self.filter_nums[2], self.filter_nums[3], 
-                             self.kernel_size, self.pool_sizes[3], 
-                             self.pool_strides[3], dropout, 'relu', use_se)
-        
-        self.blocks = [self.block1, self.block2, self.block3, self.block4]
-    
-    def forward(self, x, num_blocks: Optional[int] = None):
-        """
-        前向传播
-        
-        Args:
-            x: 输入tensor, shape=(batch, length)
-            num_blocks: 使用的block数量，如果为None则使用全部
-            
-        Returns:
-            特征tensor
-        """
-        # 确保输入是3D: (batch, 1, length)
-        if len(x.shape) == 2:
-            x = x.unsqueeze(1)
-        
-        # 执行指定数量的blocks
-        num_blocks = num_blocks if num_blocks is not None else len(self.blocks)
-        
-        for i in range(num_blocks):
-            x = self.blocks[i](x)
-        
-        return x
-    
-    def forward_partial(self, x, num_blocks: int):
-        """前向传播部分网络(用于支持集)"""
-        return self.forward(x, num_blocks)
-    
-    def forward_full(self, x):
-        """前向传播完整网络(用于查询集)"""
-        x = self.forward(x, None)
-        # 转置以匹配原始DF网络输出格式: (batch, length, channels)
-        return x.transpose(1, 2)
-
-
 class EnhancedMetaLearnet(nn.Module):
-    """
-    增强的元学习网络 (混合方案C)
-    
-    改进点:
-    1. 使用与DF相同的4层结构提取特征
-    2. Shot-level Attention融合（替代简单mean）
-    3. SE通道注意力机制
-    4. 多层MLP权重生成器（替代单层Linear）
-    """
     
     def __init__(self, in_channels: int, out_channels: int, dropout: float = 0.5):
         super(EnhancedMetaLearnet, self).__init__()
-        
-        # 步骤1: 特征提取网络（与DF相同结构）
-        self.filter_nums = [32, 64, 128, 256]
-        self.kernel_size = 8
-        self.pool_sizes = [8, 8, 8, 8]
-        self.pool_strides = [4, 4, 4, 4]
+        self.backbone = ARESBackbone(in_channels=in_channels, num_segments=4, roll_max=2500)
 
-        # 4个DFBlock
-        self.block1 = DFBlock(in_channels, self.filter_nums[0], 
-                             self.kernel_size, self.pool_sizes[0], 
-                             self.pool_strides[0], dropout, 'elu', use_se=False)
-        
-        self.block2 = DFBlock(self.filter_nums[0], self.filter_nums[1], 
-                             self.kernel_size, self.pool_sizes[1], 
-                             self.pool_strides[1], dropout, 'relu', use_se=False)
-        
-        self.block3 = DFBlock(self.filter_nums[1], self.filter_nums[2], 
-                             self.kernel_size, self.pool_sizes[2], 
-                             self.pool_strides[2], dropout, 'relu', use_se=False)
-        
-        self.block4 = DFBlock(self.filter_nums[2], self.filter_nums[3], 
-                             self.kernel_size, self.pool_sizes[3], 
-                             self.pool_strides[3], dropout, 'relu', use_se=False)
-        
-        # 步骤2: Shot-level Attention融合
         self.shot_attention = ShotAttentionFusion(self.filter_nums[3])
-        
-        # 步骤3: SE通道注意力
-        self.channel_attention = SEBlock(self.filter_nums[3], reduction=16)
-        
-        # 步骤4: 多层权重生成器
+        backbone_out_dim = self.backbone.out_channels
         self.global_pool = nn.AdaptiveAvgPool1d(1)
+        # 权重生成器 MLP
         self.weight_generator = nn.Sequential(
-            nn.Linear(self.filter_nums[3], self.filter_nums[3] * 2),
-            nn.LayerNorm(self.filter_nums[3] * 2),
+            nn.Linear(backbone_out_dim, backbone_out_dim * 2),
+            nn.LayerNorm(backbone_out_dim * 2),
             nn.ReLU(inplace=True),
             nn.Dropout(dropout),
-            nn.Linear(self.filter_nums[3] * 2, out_channels),
+            nn.Linear(backbone_out_dim * 2, out_channels),
             nn.LayerNorm(out_channels)
         )
-        
-        # 残差连接（如果输入输出维度匹配）
-        self.use_residual = (self.filter_nums[3] == out_channels)
-        if not self.use_residual:
-            self.residual_proj = nn.Linear(self.filter_nums[3], out_channels)
     
     def forward(self, x):
         """
@@ -300,47 +186,20 @@ class EnhancedMetaLearnet(nn.Module):
         # 处理输入维度
         if len(x.shape) == 4:
             # (num_classes, shots, 2, length)
-            num_classes, shots_per_class, _, length = x.shape
-            x_reshaped = x.view(num_classes * shots_per_class, 2, length)
+            num_classes, shots, _, length = x.shape
+            x_reshaped = x.view(num_classes * shots, 2, length)
         else:
             # (num_classes*shots, 2, length) - 需要从外部获知num_classes和shots
             # 这种情况下需要在调用时处理，这里暂时不支持
             raise ValueError("Input must be (num_classes, shots, 2, length)")
         
-        # 步骤1: 特征提取（通过4个DFBlock）
-        features = self.block1(x_reshaped)
-        features = self.block2(features)
-        features = self.block3(features)
-        features = self.block4(features)
-        # features: (num_classes*shots, 256, seq_len)
         
-        # 步骤2: 应用通道注意力
-        features = self.channel_attention(features)
-        # features: (num_classes*shots, 256, seq_len)
-        
-        # 重整形回(num_classes, shots, 256, seq_len)
-        _, channels, seq_len = features.shape
-        features = features.view(num_classes, shots_per_class, channels, seq_len)
-        
-        # 步骤3: Shot-level Attention融合
-        if shots_per_class > 1:
-            features = self.shot_attention(features)  # (num_classes, 256, seq_len)
-        else:
-            features = features.squeeze(1)  # (num_classes, 256, seq_len)
-        
-        # 步骤4: 全局池化
-        pooled_features = self.global_pool(features).squeeze(-1)  # (num_classes, 256)
-        
-        # 步骤5: 多层权重生成
-        dynamic_weights = self.weight_generator(pooled_features)  # (num_classes, out_channels)
-        
-        # 步骤6: 残差连接（如果维度匹配）
-        if self.use_residual:
-            dynamic_weights = dynamic_weights + pooled_features
-        elif hasattr(self, 'residual_proj'):
-            dynamic_weights = dynamic_weights + self.residual_proj(pooled_features)
-        
-        return dynamic_weights
+        features = self.backbone(x_reshaped)
+        pooled = self.global_pool(features).squeeze(-1)
+        pooled = pooled.view(num_classes, shots, -1)
+        pooled = pooled.mean(dim=1) # (Classes, 256)
+        weights = self.weight_generator(pooled)
+        return weights
 
 
 class EnhancedMultiMetaFingerNet(nn.Module):
@@ -362,72 +221,46 @@ class EnhancedMultiMetaFingerNet(nn.Module):
         self.support_blocks = support_blocks
         
         # 主特征提取网络(DF网络) - 可选添加SE
-        self.feature_extractor = DFFeatureExtractor(dropout, use_se=use_se_in_df)
+        self.feature_extractor = ARESBackbone(in_channels=1, num_segments=4, roll_max=2500)
         
-        # 计算中间特征维度
-        self.support_feature_dim = self.feature_extractor.filter_nums[support_blocks - 1] if support_blocks > 0 else 128
-        self.query_feature_dim = self.feature_extractor.filter_nums[-1]  # 256
+        self.query_feature_dim = self.feature_extractor.out_channels # 256
         
-        # 增强的元学习网络
+        # 2. Meta Learner (使用 ARES 结构)
+        # Support 包含 Mask，in_channels=2
         self.meta_learnet = EnhancedMetaLearnet(
-            in_channels=2,  # 数据+mask
+            in_channels=2,
             out_channels=self.query_feature_dim,
             dropout=dropout
         )
         
-        # 特征重加权模块（1D动态卷积）- 保持不变
+        # 3. 特征重加权 (保持不变)
         self.feature_reweighting = FeatureReweightingModule(
             feature_dim=self.query_feature_dim,
             kernel_size=1
         )
         
-        # 增强的分类头
+        # 4. 分类头 (保持不变)
+        # 这里的 seq_len 需要大致匹配 ARES 的输出长度
+        # ARES 下采样率 256, 输入 20000 -> 输出 78左右
+        # 你的 classification_head_enhanced 默认 seq_len 适配即可
         from classification_head_enhanced import EnhancedClassificationHead
         self.classification_head = EnhancedClassificationHead(
             feature_dim=self.query_feature_dim,
             num_classes=num_classes,
-            seq_len=80,
-            num_topm_layers=3,  # 简化TopM，减少到2层
-            num_cross_layers=3   # Cross-Class Attention层数
+            seq_len=80, # ARES output len approx 78 for 20k input
+            num_topm_layers=3,
+            num_cross_layers=1
         )
-        if is_main_process():
-            print(f"增强网络初始化完成:")
-            print(f"  - 类别数: {num_classes}")
-            print(f"  - DF使用SE: {use_se_in_df}")
-            print(f"  - 查询集特征维度: {self.query_feature_dim}")
-            print(f"  - Meta学习网络: Enhanced (Shot Attention + SE + Deep MLP)")
 
     def query_forward(self, x):
         """查询集前向传播"""
-        return self.feature_extractor.forward_full(x)
+        return self.feature_extractor(x)
     
     def support_forward(self, x, mask=None):
-        """
-        支持集前向传播，生成动态权重
-        
-        Args:
-            x: 支持集数据 (num_classes, shots, length)
-            mask: 有效数据mask (num_classes, shots, length)
-            
-        Returns:
-            动态权重 (num_classes, query_feature_dim)
-        """
-        num_classes, shots_per_class, length = x.shape
-        
-        # 如果没有提供mask，则创建一个全1的mask
         if mask is None:
             mask = torch.ones_like(x)
-        
-        # 将数据和mask在通道维度上拼接
-        # (num_classes, shots, length) + (num_classes, shots, length)
-        # → (num_classes, shots, 2, length)
         support_input = torch.stack([x, mask], dim=2)
-        
-        # 通过增强的meta_learnet生成动态权重
-        dynamic_weights = self.meta_learnet(support_input)
-        # dynamic_weights: (num_classes, query_feature_dim)
-        
-        return dynamic_weights
+        return self.meta_learnet(support_input)
     
     def fusion_forward(self, query_features, dynamic_weights):
         """特征融合前向传播"""
