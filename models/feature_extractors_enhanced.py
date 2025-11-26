@@ -11,7 +11,7 @@ from typing import List, Dict, Tuple, Optional
 import sys
 import os
 import random
-from einops.layers.torch import Rearrange
+#from einops.layers.torch import Rearrange
 import numpy as np
 from utils.misc import is_main_process
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -19,7 +19,62 @@ from dynamic_conv1d import FeatureReweightingModule
 #os.environ['CUDA_VISIBLE_DEVICES'] = '4'
 
 import torch.distributed as dist
+class Dividing(nn.Module):
+    """
+    替代 Rearrange('b c (n p) -> (b n) c p', n=num_segments)
+    将长序列切分为多个段。
+    """
+    def __init__(self, num_segments):
+        super(Dividing, self).__init__()
+        self.num_segments = num_segments
 
+    def forward(self, x):
+        # x: (Batch, Channel, Length)
+        B, C, L = x.shape
+        
+        # 确保长度能被整除 (通常预处理时已经是整除的，如 20000/4 = 5000)
+        if L % self.num_segments != 0:
+            # 如果不能整除，这里可以加一个简单的 padding 逻辑，或者报错
+            # 这里假设输入已经对齐
+            pass
+            
+        p = L // self.num_segments
+        
+        # 1. Reshape: 把长度 L 拆成 n * p -> (B, C, n, p)
+        x = x.view(B, C, self.num_segments, p)
+        
+        # 2. Permute: 交换维度，把段数 n 放到 Batch 旁边 -> (B, n, C, p)
+        x = x.permute(0, 2, 1, 3).contiguous()
+        
+        # 3. Flatten: 合并 B 和 n -> (B*n, C, p)
+        x = x.view(B * self.num_segments, C, p)
+        
+        return x
+
+class Combination(nn.Module):
+    """
+    替代 Rearrange('(b n) c p -> b c (n p)', n=num_segments)
+    将多个段合并回长序列。
+    """
+    def __init__(self, num_segments):
+        super(Combination, self).__init__()
+        self.num_segments = num_segments
+
+    def forward(self, x):
+        # x: (Batch * n, Channel, p)
+        Bn, C, p = x.shape
+        B = Bn // self.num_segments
+        
+        # 1. Un-flatten: 拆分 Batch -> (B, n, C, p)
+        x = x.view(B, self.num_segments, C, p)
+        
+        # 2. Permute: 交换维度，把 C 放回前面 -> (B, C, n, p)
+        x = x.permute(0, 2, 1, 3).contiguous()
+        
+        # 3. Merge: 合并 n 和 p 回到 L -> (B, C, n*p)
+        x = x.view(B, C, self.num_segments * p)
+        
+        return x
 class ConvBlock1d(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, dilation=1):
         super(ConvBlock1d, self).__init__()
@@ -44,11 +99,11 @@ class ConvBlock1d(nn.Module):
 
 class LocalProfiling(nn.Module):
     """ Local Profiling module in ARES """
-    def __init__(self):
+    def __init__(self, in_channels):
         super(LocalProfiling, self).__init__()
         
         self.net = nn.Sequential(
-            ConvBlock1d(in_channels=1, out_channels=32, kernel_size=7),
+            ConvBlock1d(in_channels=in_channels, out_channels=32, kernel_size=7),
             nn.MaxPool1d(kernel_size=8, stride=4),
             nn.Dropout(p=0.1),
             ConvBlock1d(in_channels=32, out_channels=64, kernel_size=7),
@@ -61,7 +116,7 @@ class LocalProfiling(nn.Module):
             nn.MaxPool1d(kernel_size=8, stride=4),
             nn.Dropout(p=0.1),
         )
-
+        self.out_channels = 256
     def forward(self, x):
         x = self.net(x)
         return x
@@ -79,28 +134,28 @@ class ARESBackbone(nn.Module):
         self.roll_max = roll_max
         
         # 1. 分段: (Batch, Channel, Segments*P) -> (Batch*Segments, Channel, P)
-        self.dividing = Rearrange('b c (n p) -> (b n) c p', n=num_segments)
+        self.dividing = Dividing(num_segments)#Rearrange('b c (n p) -> (b n) c p', n=num_segments)
         
         # 2. 局部特征提取 (CNN)
         self.profiling = LocalProfiling(in_channels=in_channels)
         
         # 3. 合并: (Batch*Segments, Channel, P_out) -> (Batch, Channel, Segments*P_out)
-        self.combination = Rearrange('(b n) c p -> b c (n p)', n=num_segments)
+        self.combination = Combination(num_segments)#Rearrange('(b n) c p -> b c (n p)', n=num_segments)
         
         self.out_channels = self.profiling.out_channels # 256
 
     def forward(self, x):
         # 1. 随机平移增强 (仅训练阶段启用)
         # 这对 Multi-tab 场景非常重要，模拟截取位置的随机性
-        if self.training and self.roll_max > 0:
-            shift = np.random.randint(0, 1 + self.roll_max)
-            x = torch.roll(x, shifts=shift, dims=-1)
+        #if self.training and self.roll_max > 0:
+         #   shift = np.random.randint(0, 1 + self.roll_max)
+          #  x = torch.roll(x, shifts=shift, dims=-1)
         
         # 2. 分段
         # 注意：输入长度必须能被 num_segments 整除，否则 Rearrange 会报错
         # 通常 20000 / 4 = 5000，是可以整除的
         x = self.dividing(x)
-        
+        #x = x.reshape(
         # 3. 提取特征
         x = self.profiling(x)
         
@@ -158,7 +213,7 @@ class EnhancedMetaLearnet(nn.Module):
         super(EnhancedMetaLearnet, self).__init__()
         self.backbone = ARESBackbone(in_channels=in_channels, num_segments=4, roll_max=2500)
 
-        self.shot_attention = ShotAttentionFusion(self.filter_nums[3])
+        #self.shot_attention = ShotAttentionFusion(self.filter_nums[3])
         backbone_out_dim = self.backbone.out_channels
         self.global_pool = nn.AdaptiveAvgPool1d(1)
         # 权重生成器 MLP
@@ -247,14 +302,15 @@ class EnhancedMultiMetaFingerNet(nn.Module):
         self.classification_head = EnhancedClassificationHead(
             feature_dim=self.query_feature_dim,
             num_classes=num_classes,
-            seq_len=80, # ARES output len approx 78 for 20k input
+            seq_len=72, # ARES output len approx 78 for 20k input
             num_topm_layers=3,
             num_cross_layers=1
         )
 
     def query_forward(self, x):
         """查询集前向传播"""
-        return self.feature_extractor(x)
+        features = self.feature_extractor(x)
+        return features.transpose(1, 2)
     
     def support_forward(self, x, mask=None):
         if mask is None:
@@ -284,6 +340,8 @@ class EnhancedMultiMetaFingerNet(nn.Module):
             dict包含查询特征、动态权重、融合特征和分类结果
         """
         # 查询集特征提取
+        if len(query_data.shape) == 2:
+            query_data = query_data.unsqueeze(1)
         query_features = self.query_forward(query_data)
         
         # 支持集动态权重生成 (使用增强的MetaLearnet)
