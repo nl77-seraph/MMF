@@ -9,7 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 from timm.models.layers import trunc_normal_, DropPath
-
+from utils.misc import is_main_process
 
 class CrossClassAttention(nn.Module):
     """
@@ -117,15 +117,12 @@ class EnhancedClassificationHead(nn.Module):
     """
     
     def __init__(self, feature_dim: int = 256, num_classes: int = 3, seq_len: int = 119, 
-                 classification_method: str = 'binary', unified_threshold: float = 0.4,
                  num_topm_layers: int = 2, num_cross_layers: int = 2):
         super(EnhancedClassificationHead, self).__init__()
         
         self.feature_dim = feature_dim
         self.num_classes = num_classes
         self.seq_len = seq_len
-        self.classification_method = classification_method
-        self.unified_threshold = unified_threshold
         self.num_topm_layers = num_topm_layers
         self.num_cross_layers = num_cross_layers
         
@@ -155,27 +152,24 @@ class EnhancedClassificationHead(nn.Module):
         ])
         
         # 步骤3: 增强的分类器 (每个类别独立)
-        if classification_method == 'binary':
-            self.classifier = nn.Sequential(
-                nn.Linear(embed_dim, embed_dim // 2),
-                nn.LayerNorm(embed_dim // 2),
-                nn.ReLU(inplace=True),
-                nn.Dropout(dropout),
-                nn.Linear(embed_dim // 2, embed_dim // 4),
-                nn.LayerNorm(embed_dim // 4),
-                nn.ReLU(inplace=True),
-                nn.Dropout(dropout),
-                nn.Linear(embed_dim // 4, 1),  # 二分类
-            )
-        else:
-            raise ValueError(f"Unknown classification_method: {classification_method}")
-        
-        print(f"增强分类头初始化:")
-        print(f"  - 特征维度: {feature_dim}")
-        print(f"  - 类别数: {num_classes}")
-        print(f"  - TopM层数: {num_topm_layers} (简化)")
-        print(f"  - Cross-Class层数: {num_cross_layers} (核心改进)")
-        print(f"  - 分类方法: {classification_method}")
+        self.classifier = nn.Sequential(
+            nn.Linear(embed_dim, embed_dim // 2),
+            nn.LayerNorm(embed_dim // 2),
+            nn.ReLU(inplace=True),
+            nn.Dropout(dropout),
+            nn.Linear(embed_dim // 2, embed_dim // 4),
+            nn.LayerNorm(embed_dim // 4),
+            nn.ReLU(inplace=True),
+            nn.Dropout(dropout),
+            nn.Linear(embed_dim // 4, 1),  # 二分类
+        )
+
+        if is_main_process():
+            print(f"增强分类头初始化:")
+            print(f"  - 特征维度: {feature_dim}")
+            print(f"  - 类别数: {num_classes}")
+            print(f"  - TopM层数: {num_topm_layers} (简化)")
+            print(f"  - Cross-Class层数: {num_cross_layers} (核心改进)")
 
     def forward(self, reweighted_features):
         """
@@ -185,10 +179,9 @@ class EnhancedClassificationHead(nn.Module):
         Returns:
             logits: (batch, num_classes)
         """
-        if self.classification_method == 'binary':
-            return self.forward_binary(reweighted_features)
-        else:
-            raise ValueError(f"Unknown classification_method: {self.classification_method}")
+
+        return self.forward_binary(reweighted_features)
+
     
     def forward_binary(self, reweighted_features):
         """
@@ -230,99 +223,19 @@ class EnhancedClassificationHead(nn.Module):
         for cross_layer in self.cross_class_layers:
             all_class_features = cross_layer(all_class_features)
         # all_class_features: (batch, num_classes, feature_dim)
+        bs, nc, fd = all_class_features.shape
+        class_features_flat = all_class_features.view(bs * nc, fd)
+        logits_flat = self.classifier(class_features_flat)  # (batch*num_classes, 1)
+        logits = logits_flat.view(batch_size, nc)
+        # # 步骤4: 独立二分类
+        # class_logits = []
+        # for class_idx in range(self.num_classes):
+        #     class_feature = all_class_features[:, class_idx, :]  # (batch, feature_dim)
+        #     class_logit = self.classifier(class_feature)  # (batch, 1)
+        #     class_logits.append(class_logit)
         
-        # 步骤4: 独立二分类
-        class_logits = []
-        for class_idx in range(self.num_classes):
-            class_feature = all_class_features[:, class_idx, :]  # (batch, feature_dim)
-            class_logit = self.classifier(class_feature)  # (batch, 1)
-            class_logits.append(class_logit)
-        
-        # 拼接: (batch, num_classes)
-        logits = torch.cat(class_logits, dim=1)
+        # # 拼接: (batch, num_classes)
+        # logits = torch.cat(class_logits, dim=1)
         
         return logits
     
-    def predict(self, reweighted_features, threshold=None):
-        """
-        预测函数
-        
-        Args:
-            reweighted_features: 重加权特征
-            threshold: 二分类阈值
-            
-        Returns:
-            predictions: (batch, num_classes) 二值化预测
-            probabilities: (batch, num_classes) 概率
-        """
-        if threshold is None:
-            threshold = 0.5
-        
-        logits = self.forward(reweighted_features)
-        probabilities = torch.sigmoid(logits)
-        predictions = (probabilities > threshold).float()
-        
-        return predictions, probabilities
-
-
-def test_enhanced_classification_head():
-    """测试增强分类头"""
-    print("="*60)
-    print("测试增强的分类头")
-    print("="*60)
-    
-    # 设置参数
-    batch_size = 4
-    num_classes = 3
-    feature_dim = 256
-    seq_len = 119
-    
-    # 创建模拟数据 (重加权后的特征)
-    reweighted_features = torch.randn(batch_size * num_classes, feature_dim, seq_len)
-    
-    print(f"\n输入形状:")
-    print(f"  重加权特征: {reweighted_features.shape}")
-    
-    # 创建增强分类头
-    head = EnhancedClassificationHead(
-        feature_dim=feature_dim,
-        num_classes=num_classes,
-        seq_len=seq_len,
-        classification_method='binary',
-        num_topm_layers=2,  # 简化版，仅2层
-        num_cross_layers=2   # Cross-Class层数
-    )
-    
-    # 前向传播
-    print(f"\n执行前向传播...")
-    with torch.no_grad():
-        logits = head(reweighted_features)
-        predictions, probabilities = head.predict(reweighted_features)
-    
-    print(f"\n输出形状:")
-    print(f"  Logits: {logits.shape}")
-    print(f"  Predictions: {predictions.shape}")
-    print(f"  Probabilities: {probabilities.shape}")
-    
-    # 验证
-    assert logits.shape == (batch_size, num_classes)
-    assert predictions.shape == (batch_size, num_classes)
-    assert probabilities.shape == (batch_size, num_classes)
-    
-    print(f"\n示例输出 (第一个样本):")
-    print(f"  Logits: {logits[0].numpy()}")
-    print(f"  Probabilities: {probabilities[0].numpy()}")
-    print(f"  Predictions: {predictions[0].numpy()}")
-    
-    print(f"\n✅ 增强分类头测试完成!")
-    print(f"\n改进点:")
-    print(f"  ✓ 简化TopM MHSA (减少到{head.num_topm_layers}层)")
-    print(f"  ✓ Cross-Class Attention ({head.num_cross_layers}层)")
-    print(f"  ✓ 增强MLP分类器 (3层)")
-    print(f"  ✓ 保持独立二分类结构")
-
-
-if __name__ == "__main__":
-    test_enhanced_classification_head()
-
-

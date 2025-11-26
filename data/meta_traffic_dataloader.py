@@ -14,6 +14,10 @@ import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from meta_traffic_dataset import QueryTrafficDataset, SupportTrafficDataset
 
+import torch.distributed as dist
+def is_main_process():
+    """检查是否为主进程"""
+    return not dist.is_initialized() or dist.get_rank() == 0
 
 class MetaTrafficDataLoader:
     """
@@ -26,7 +30,8 @@ class MetaTrafficDataLoader:
                  query_files_dir: str,
                  support_root_dir: str,
                  activated_classes: List[int] = None,
-                 target_length: int = 30000,
+                 support_target_length: int = 10000,
+                 query_target_length: int = 20000,
                  shots_per_class: int = 1,
                  batch_size: int = 4,
                  shuffle: bool = True,
@@ -46,23 +51,23 @@ class MetaTrafficDataLoader:
             random_sampling: 是否使用随机采样模式（用于训练）
         """
         self.activated_classes = activated_classes if activated_classes else list(range(60))  # 0-59
-        self.target_length = target_length
+        self.support_target_length = support_target_length
+        self.query_target_length = query_target_length
         self.shots_per_class = shots_per_class
         self.batch_size = batch_size
         self.random_sampling = random_sampling
-        
-        print(f"MetaTrafficDataLoader初始化...")
-        print(f"  - 激活类别: {len(self.activated_classes)}个 (0-{max(self.activated_classes)})")
-        print(f"  - 目标长度: {target_length}")
-        print(f"  - 每类样本数: {shots_per_class}")
-        print(f"  - 批大小: {batch_size}")
-        print(f"  - 随机采样: {random_sampling}")
+        if is_main_process():
+            print(f"MetaTrafficDataLoader初始化...")
+            print(f"  - 激活类别: {len(self.activated_classes)}个 (0-{max(self.activated_classes)})")
+            print(f"  - 每类样本数: {shots_per_class}")
+            print(f"  - 批大小: {batch_size}")
+            print(f"  - 随机采样: {random_sampling}")
         
         # 初始化查询集数据集
         self.query_dataset = QueryTrafficDataset(
             json_index_path=query_json_path,
             query_files_dir=query_files_dir,
-            target_length=target_length,
+            target_length=query_target_length,
             activated_classes=self.activated_classes
         )
         
@@ -70,7 +75,7 @@ class MetaTrafficDataLoader:
         self.support_dataset = SupportTrafficDataset(
             support_root_dir=support_root_dir,
             activated_classes=self.activated_classes,
-            target_length=target_length,
+            target_length=support_target_length,
             shots_per_class=shots_per_class,
             random_sampling=random_sampling
         )
@@ -87,14 +92,16 @@ class MetaTrafficDataLoader:
         if not self.random_sampling:
             # 固定采样模式：预加载所有支持集数据
             self.support_data, self.support_masks, self.class_order = self.support_dataset.get_all_support_data()
-            print(f"  - 支持集形状: {self.support_data.shape}")
+            if is_main_process():
+                print(f"  - 支持集形状: {self.support_data.shape}")
         else:
             # 随机采样模式：每次迭代时动态生成支持集
             self.class_order = sorted(self.activated_classes)
-            print(f"  - 支持集: 动态随机采样模式")
-        
-        print(f"  - 查询集样本数: {len(self.query_dataset)}")
-        print(f"  - 数据加载器初始化完成！")
+            if is_main_process():
+                print(f"  - 支持集: 动态随机采样模式")
+        if is_main_process():
+            print(f"  - 查询集样本数: {len(self.query_dataset)}")
+            print(f"  - 数据加载器初始化完成！")
     
     def _query_collate_fn(self, batch):
         """查询集的collate函数"""

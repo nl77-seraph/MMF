@@ -1,0 +1,51 @@
+{
+    "seed": 1024,
+    "num_classes": 60,
+    "support_target_length": 10000,
+    "query_target_length":20000,
+    "shots_per_class": 20,
+    "support_blocks": 0,
+    "dropout": 0.15,
+    "tabs":"mixed",
+    "train_query_json":"/root/datasets/multi_front/multi/mixed_tab/train/mixed_tab_train.json",
+    "train_query_dir":"/root/datasets/multi_front/multi/mixed_tab/train/query_data",
+    "val_query_json":"/root/datasets/multi_front/multi/mixed_tab/test/mixed_tab_test.json",
+    "val_query_dir":"/root/datasets/multi_front/multi/mixed_tab/test/query_data",
+    "train_support_root_dir":"/root/datasets/multi_front/multi/mixed_tab/train/support_data",
+    "val_support_root_dir":"/root/datasets/multi_front/multi/mixed_tab/train/support_data",
+  
+    "use_se_in_df": true,               
+  
+    "num_epochs": 100,
+    "batch_size": 128,
+    "val_batch_size": 128,
+    "num_workers": 0,
+  
+    "optimizer": "adam",
+    "learning_rate": 5e-5,
+    "weight_decay": 1e-4,
+    "momentum": 0.9,
+    "grad_clip": 1.0,
+  
+    "scheduler": "cosine",
+    "step_size": 30,
+    "gamma": 0.1,
+    "min_lr": 1e-6,
+  
+    "loss_type": "weighted_bce",
+    "positive_ratio": 19.0,
+    "focal_alpha": 0.25,
+    "focal_gamma": 2.0,
+  
+    "use_distributed": true,
+    "gpus": [0,1,2,3],
+    "dist_backend": "nccl",
+    "master_addr": "0.0.0.0",
+    "master_port": "23777",
+  
+    "output_dir": "./experiments",
+    "model_name": "front_weight_bce_20sp_medium",
+    "save_interval": 10
+  
+  }
+  

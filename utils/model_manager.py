@@ -62,8 +62,13 @@ class ModelManager:
         # 如果是最佳模型，保存到best_model
         if is_best:
             torch.save(checkpoint, self.best_model_path)
-            print(f"💾 保存最佳模型: epoch {epoch+1}, mAP={metrics.get('mAP', 0):.4f}")
-        
+            print(f"💾 保存最佳模型: epoch {epoch+1}, mAP={metrics.get('sig_mAP', 0):.4f}")
+            # 更新指标历史
+            self.metrics_history.append({
+                'epoch': epoch,
+                'metrics': metrics
+            })
+            self.save_metrics_history()
         # 保存定期checkpoint
         if (epoch + 1) % 10 == 0:
             epoch_checkpoint_path = os.path.join(
@@ -72,14 +77,7 @@ class ModelManager:
             )
             torch.save(checkpoint, epoch_checkpoint_path)
         
-        # 更新指标历史
-        self.metrics_history.append({
-            'epoch': epoch,
-            'metrics': metrics,
-            'timestamp': datetime.now().isoformat(),
-            'is_best': is_best
-        })
-        self.save_metrics_history()
+
     
     def load_checkpoint(self, model, optimizer=None, scheduler=None, 
                        checkpoint_path=None, load_best=True):

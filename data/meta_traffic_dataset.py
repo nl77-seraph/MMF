@@ -17,7 +17,10 @@ import pickle
 import json
 from typing import List, Dict, Tuple, Optional
 from torch.utils.data import Dataset
-
+import torch.distributed as dist
+def is_main_process():
+    """检查是否为主进程"""
+    return not dist.is_initialized() or dist.get_rank() == 0
 
 class QueryTrafficDataset(Dataset):
     """
@@ -44,11 +47,11 @@ class QueryTrafficDataset(Dataset):
         
         # 加载查询集索引
         self._load_query_index()
-        
-        print(f"QueryTrafficDataset初始化完成:")
-        print(f"  - 查询样本数量: {len(self.query_index)}")
-        print(f"  - 激活类别数量: {len(self.activated_classes)}")
-        print(f"  - 目标序列长度: {self.target_length}")
+        if is_main_process():
+            print(f"QueryTrafficDataset初始化完成:")
+            print(f"  - 查询样本数量: {len(self.query_index)}")
+            print(f"  - 激活类别数量: {len(self.activated_classes)}")
+            print(f"  - 目标序列长度: {self.target_length}")
     
     def _load_query_index(self):
         """加载查询集索引"""
@@ -69,8 +72,8 @@ class QueryTrafficDataset(Dataset):
                     'labels': labels,
                     'file_path': file_path
                 })
-        
-        print(f"有效查询样本数量: {len(self.query_index)}")
+        if is_main_process():
+            print(f"有效查询样本数量: {len(self.query_index)}")
     
     def _parse_labels_from_filename(self, filename: str) -> List[int]:
         """
@@ -203,12 +206,13 @@ class SupportTrafficDataset(Dataset):
             # 固定采样模式：预生成所有类别的支持集
             self._prepare_all_support_data()
         else:
+            if is_main_process():
             # 随机采样模式：仅记录文件索引，每次动态加载
-            print(f"SupportTrafficDataset初始化完成 (随机采样模式):")
-            print(f"  - 激活类别数量: {len(self.activated_classes)}")
-            print(f"  - 每类样本数: {self.shots_per_class}")
-            print(f"  - 目标序列长度: {self.target_length}")
-            print(f"  - 随机采样: {self.random_sampling}")
+                print(f"SupportTrafficDataset初始化完成 (随机采样模式):")
+                print(f"  - 激活类别数量: {len(self.activated_classes)}")
+                print(f"  - 每类样本数: {self.shots_per_class}")
+                print(f"  - 目标序列长度: {self.target_length}")
+                print(f"  - 随机采样: {self.random_sampling}")
     
     def _build_support_index(self):
         """构建支持集索引"""
@@ -231,7 +235,8 @@ class SupportTrafficDataset(Dataset):
                 print(f"警告: 类别{class_id}样本不足，需要{self.shots_per_class}个，只有{len(class_files)}个")
             
             self.support_files_by_class[class_id] = class_files
-            print(f"类别{class_id}: 找到{len(class_files)}个支持样本")
+            if is_main_process():
+                print(f"类别{class_id}: 找到{len(class_files)}个支持样本")
     
     def _process_support_sequence(self, raw_data: List) -> Tuple[torch.Tensor, torch.Tensor]:
         """
@@ -289,11 +294,11 @@ class SupportTrafficDataset(Dataset):
         # shape: (num_classes * shots_per_class, target_length)
         self.support_data_tensor = torch.stack(self.all_support_data)
         self.support_masks_tensor = torch.stack(self.all_support_masks)
-        
-        print(f"支持集数据准备完成 (固定采样模式):")
-        print(f"  - 支持集形状: {self.support_data_tensor.shape}")
-        print(f"  - 掩码形状: {self.support_masks_tensor.shape}")
-        print(f"  - 类别顺序: {self.class_order}")
+        if is_main_process():
+            print(f"支持集数据准备完成 (固定采样模式):")
+            print(f"  - 支持集形状: {self.support_data_tensor.shape}")
+            print(f"  - 掩码形状: {self.support_masks_tensor.shape}")
+            print(f"  - 类别顺序: {self.class_order}")
     
     def _load_and_process_sample(self, file_path: str) -> Tuple[torch.Tensor, torch.Tensor]:
         """

@@ -10,8 +10,12 @@ import torch.nn.functional as F
 from typing import List, Dict, Tuple, Optional
 import sys
 import os
+from utils.misc import is_main_process
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from dynamic_conv1d import FeatureReweightingModule
+#os.environ['CUDA_VISIBLE_DEVICES'] = '4'
+
+import torch.distributed as dist
 
 
 class SEBlock(nn.Module):
@@ -350,13 +354,12 @@ class EnhancedMultiMetaFingerNet(nn.Module):
     """
     
     def __init__(self, num_classes: int = 3, dropout: float = 0.5, 
-                 support_blocks: int = 0, classification_method: str = 'binary',
+                 support_blocks: int = 0, 
                  unified_threshold: float = 0.4, use_se_in_df: bool = False):
         super(EnhancedMultiMetaFingerNet, self).__init__()
         
         self.num_classes = num_classes
         self.support_blocks = support_blocks
-        self.classification_method = classification_method
         
         # 主特征提取网络(DF网络) - 可选添加SE
         self.feature_extractor = DFFeatureExtractor(dropout, use_se=use_se_in_df)
@@ -383,18 +386,16 @@ class EnhancedMultiMetaFingerNet(nn.Module):
         self.classification_head = EnhancedClassificationHead(
             feature_dim=self.query_feature_dim,
             num_classes=num_classes,
-            seq_len=119,
-            classification_method=classification_method,
-            unified_threshold=unified_threshold,
-            num_topm_layers=2,  # 简化TopM，减少到2层
-            num_cross_layers=2   # Cross-Class Attention层数
+            seq_len=80,
+            num_topm_layers=3,  # 简化TopM，减少到2层
+            num_cross_layers=3   # Cross-Class Attention层数
         )
-        
-        print(f"增强网络初始化完成:")
-        print(f"  - 类别数: {num_classes}")
-        print(f"  - DF使用SE: {use_se_in_df}")
-        print(f"  - 查询集特征维度: {self.query_feature_dim}")
-        print(f"  - Meta学习网络: Enhanced (Shot Attention + SE + Deep MLP)")
+        if is_main_process():
+            print(f"增强网络初始化完成:")
+            print(f"  - 类别数: {num_classes}")
+            print(f"  - DF使用SE: {use_se_in_df}")
+            print(f"  - 查询集特征维度: {self.query_feature_dim}")
+            print(f"  - Meta学习网络: Enhanced (Shot Attention + SE + Deep MLP)")
 
     def query_forward(self, x):
         """查询集前向传播"""
@@ -435,8 +436,7 @@ class EnhancedMultiMetaFingerNet(nn.Module):
     def classification_forward(self, reweighted_features):
         """分类前向传播"""
         logits = self.classification_head(reweighted_features)
-        predictions, probabilities = self.classification_head.predict(reweighted_features)
-        return logits, predictions, probabilities
+        return logits
     
     def forward(self, query_data, support_data, support_masks=None):
         """
@@ -460,75 +460,13 @@ class EnhancedMultiMetaFingerNet(nn.Module):
         reweighted_features = self.fusion_forward(query_features, dynamic_weights)
         
         # 多标签分类
-        logits, predictions, probabilities = self.classification_forward(reweighted_features)
+        logits = self.classification_forward(reweighted_features)
         
         return {
             'query_features': query_features,
             'dynamic_weights': dynamic_weights,
             'reweighted_features': reweighted_features,
-            'logits': logits,
-            'predictions': predictions,
-            'probabilities': probabilities
+            'logits': logits
         }
 
-
-def test_enhanced_network():
-    """测试增强网络"""
-    print("="*60)
-    print("测试增强的Multi-Meta-Finger网络")
-    print("="*60)
-    
-    # 设置参数
-    batch_size = 4
-    num_classes = 3
-    shots_per_class = 2
-    query_length = 30000
-    
-    # 创建增强网络
-    net = EnhancedMultiMetaFingerNet(
-        num_classes=num_classes, 
-        dropout=0.5, 
-        support_blocks=0,
-        use_se_in_df=False  # 先不用SE，测试基础版本
-    )
-    
-    # 创建模拟数据
-    query_data = torch.randn(batch_size, query_length)
-    support_data = torch.randn(num_classes, shots_per_class, query_length)
-    support_masks = torch.ones(num_classes, shots_per_class, query_length)
-    
-    print(f"\n输入形状:")
-    print(f"  查询集: {query_data.shape}")
-    print(f"  支持集: {support_data.shape}")
-    print(f"  支持集mask: {support_masks.shape}")
-    
-    # 前向传播
-    print(f"\n执行前向传播...")
-    with torch.no_grad():
-        results = net(query_data, support_data, support_masks)
-    
-    print(f"\n输出形状:")
-    print(f"  查询集特征: {results['query_features'].shape}")
-    print(f"  动态权重: {results['dynamic_weights'].shape}")
-    print(f"  重加权特征: {results['reweighted_features'].shape}")
-    print(f"  分类logits: {results['logits'].shape}")
-    print(f"  预测结果: {results['predictions'].shape}")
-    print(f"  类别概率: {results['probabilities'].shape}")
-    
-    # 验证输出维度
-    assert results['query_features'].shape == (batch_size, 119, 256)
-    assert results['dynamic_weights'].shape == (num_classes, 256)
-    assert results['reweighted_features'].shape == (batch_size * num_classes, 256, 119)
-    assert results['logits'].shape == (batch_size, num_classes)
-    
-    print(f"\n✅ 增强网络测试完成!")
-    print(f"\n改进点:")
-    print(f"  ✓ Shot Attention融合")
-    print(f"  ✓ SE通道注意力")
-    print(f"  ✓ 深层MLP权重生成")
-    print(f"  ✓ 残差连接")
-
-
-if __name__ == "__main__":
-    test_enhanced_network()
 

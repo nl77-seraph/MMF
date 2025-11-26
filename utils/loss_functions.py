@@ -176,6 +176,39 @@ class BalancedBCELoss(nn.Module):
             return weighted_loss
 
 
+class AsymmetricLoss(nn.Module):
+    """
+    Asymmetric Loss for multi-label:
+      - 对正样本用 (1-p)^gamma_pos * log(p)
+      - 对负样本用 p^gamma_neg * log(1-p)
+      - 对负项加 clip: 抑制特别容易的负样本对总损失的主导
+    传入 logits（未过 sigmoid）
+    """
+    def __init__(self, gamma_pos=0.0, gamma_neg=3.0, clip=0.05, eps=1e-8):
+        super().__init__()
+        self.gp = gamma_pos
+        self.gn = gamma_neg
+        self.clip = clip
+        self.eps = eps
+
+    def forward(self, logits, targets):
+        # logits, targets: (B, C)；targets \in {0,1}
+        x_sigmoid = torch.sigmoid(logits)
+        xs_pos = x_sigmoid                 # p
+        xs_neg = 1.0 - x_sigmoid           # 1-p
+
+        # 负项剪裁：减小容易负样本的权重
+        if self.clip is not None and self.clip > 0:
+            xs_neg = (xs_neg + self.clip).clamp(max=1.0)
+
+        # focal 调制
+        loss_pos = targets * ((1.0 - xs_pos) ** self.gp) * torch.log(xs_pos.clamp(min=self.eps))
+        loss_neg = (1.0 - targets) * (xs_pos ** self.gn)   * torch.log(xs_neg.clamp(min=self.eps))
+
+        loss = -(loss_pos + loss_neg)
+        return loss.mean()
+
+
 def get_loss_function(loss_type, **kwargs):
     """
     损失函数工厂函数

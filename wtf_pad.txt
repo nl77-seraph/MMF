@@ -1,0 +1,1066 @@
+
+============================================================
+Running wtf_pad
+Time: 2025-11-15 16:38:54
+============================================================
+
+请检查配置文件
+🔍 检测到 5 个GPU
+✅ 将使用单GPU训练: GPU 0
+开始训练...
+📋 配置:
+  - 分布式: False
+Traceback (most recent call last):
+  File "/root/MMF-1029-simple/train_enhanced.py", line 465, in <module>
+    main()
+  File "/root/MMF-1029-simple/train_enhanced.py", line 433, in main
+    config = get_final_config()
+  File "/root/MMF-1029-simple/utils/misc.py", line 145, in get_final_config
+    print(f"  - GPU: {config['gpus']}")
+KeyError: 'gpus'
+
+
+============================================================
+Running wtf_pad
+Time: 2025-11-16 23:04:22
+============================================================
+
+🔍 检测到 5 个GPU
+✅ 将使用 4 个GPU进行分布式训练: [0, 1, 2, 3]
+开始训练...
+📋 配置:
+  - 分布式: True
+  - GPU: [0, 1, 2, 3]
+  - DF使用SE: True
+[rank0]:[W1116 23:04:36.955700725 reducer.cpp:1400] Warning: find_unused_parameters=True was specified in DDP constructor, but did not find any unused parameters in the forward pass. This flag results in an extra traversal of the autograd graph every iteration,  which can adversely affect performance. If your model indeed never has any unused parameters in the forward pass, consider turning this flag off. Note that this warning may be a false positive if your model has flow control causing later iterations to have unused parameters. (function operator())
+[rank1]:[W1116 23:04:36.000716879 reducer.cpp:1400] Warning: find_unused_parameters=True was specified in DDP constructor, but did not find any unused parameters in the forward pass. This flag results in an extra traversal of the autograd graph every iteration,  which can adversely affect performance. If your model indeed never has any unused parameters in the forward pass, consider turning this flag off. Note that this warning may be a false positive if your model has flow control causing later iterations to have unused parameters. (function operator())
+[rank2]:[W1116 23:04:36.056953310 reducer.cpp:1400] Warning: find_unused_parameters=True was specified in DDP constructor, but did not find any unused parameters in the forward pass. This flag results in an extra traversal of the autograd graph every iteration,  which can adversely affect performance. If your model indeed never has any unused parameters in the forward pass, consider turning this flag off. Note that this warning may be a false positive if your model has flow control causing later iterations to have unused parameters. (function operator())
+[rank3]:[W1116 23:04:36.068727366 reducer.cpp:1400] Warning: find_unused_parameters=True was specified in DDP constructor, but did not find any unused parameters in the forward pass. This flag results in an extra traversal of the autograd graph every iteration,  which can adversely affect performance. If your model indeed never has any unused parameters in the forward pass, consider turning this flag off. Note that this warning may be a false positive if your model has flow control causing later iterations to have unused parameters. (function operator())
+🚀 分布式训练初始化完成 - Rank: 0/4
+🚀 EnhancedTrainer初始化 (混合方案C)
+  - 模式: 分布式训练
+  - Rank: 0/4
+  - 设备: cuda:0
+
+📦 设置数据加载器...
+MetaTrafficDataLoader初始化...
+  - 激活类别: 60个 (0-59)
+  - 每类样本数: 20
+  - 批大小: 128
+  - 随机采样: True
+有效查询样本数量: 153000
+QueryTrafficDataset初始化完成:
+  - 查询样本数量: 153000
+  - 激活类别数量: 60
+  - 目标序列长度: 20000
+类别0: 找到892个支持样本
+类别1: 找到900个支持样本
+类别2: 找到900个支持样本
+类别3: 找到898个支持样本
+类别4: 找到900个支持样本
+类别5: 找到892个支持样本
+类别6: 找到871个支持样本
+类别7: 找到893个支持样本
+类别8: 找到890个支持样本
+类别9: 找到897个支持样本
+类别10: 找到899个支持样本
+类别11: 找到884个支持样本
+类别12: 找到880个支持样本
+类别13: 找到888个支持样本
+类别14: 找到899个支持样本
+类别15: 找到900个支持样本
+类别16: 找到899个支持样本
+类别17: 找到887个支持样本
+类别18: 找到897个支持样本
+类别19: 找到887个支持样本
+类别20: 找到873个支持样本
+类别21: 找到900个支持样本
+类别22: 找到898个支持样本
+类别23: 找到900个支持样本
+类别24: 找到894个支持样本
+类别25: 找到887个支持样本
+类别26: 找到887个支持样本
+类别27: 找到892个支持样本
+类别28: 找到898个支持样本
+类别29: 找到887个支持样本
+类别30: 找到899个支持样本
+类别31: 找到887个支持样本
+类别32: 找到883个支持样本
+类别33: 找到884个支持样本
+类别34: 找到865个支持样本
+类别35: 找到840个支持样本
+类别36: 找到884个支持样本
+类别37: 找到894个支持样本
+类别38: 找到900个支持样本
+类别39: 找到892个支持样本
+类别40: 找到887个支持样本
+类别41: 找到884个支持样本
+类别42: 找到876个支持样本
+类别43: 找到897个支持样本
+类别44: 找到886个支持样本
+类别45: 找到896个支持样本
+类别46: 找到888个支持样本
+类别47: 找到888个支持样本
+类别48: 找到898个支持样本
+类别49: 找到881个支持样本
+类别50: 找到896个支持样本
+类别51: 找到887个支持样本
+类别52: 找到888个支持样本
+类别53: 找到889个支持样本
+类别54: 找到898个支持样本
+类别55: 找到900个支持样本
+类别56: 找到886个支持样本
+类别57: 找到897个支持样本
+类别58: 找到879个支持样本
+类别59: 找到875个支持样本
+SupportTrafficDataset初始化完成 (随机采样模式):
+  - 激活类别数量: 60
+  - 每类样本数: 20
+  - 目标序列长度: 10000
+  - 随机采样: True
+  - 支持集: 动态随机采样模式
+  - 查询集样本数: 153000
+  - 数据加载器初始化完成！
+MetaTrafficDataLoader初始化...
+  - 激活类别: 60个 (0-59)
+  - 每类样本数: 20
+  - 批大小: 128
+  - 随机采样: True
+有效查询样本数量: 35000
+QueryTrafficDataset初始化完成:
+  - 查询样本数量: 35000
+  - 激活类别数量: 60
+  - 目标序列长度: 20000
+类别0: 找到892个支持样本
+类别1: 找到900个支持样本
+类别2: 找到900个支持样本
+类别3: 找到898个支持样本
+类别4: 找到900个支持样本
+类别5: 找到892个支持样本
+类别6: 找到871个支持样本
+类别7: 找到893个支持样本
+类别8: 找到890个支持样本
+类别9: 找到897个支持样本
+类别10: 找到899个支持样本
+类别11: 找到884个支持样本
+类别12: 找到880个支持样本
+类别13: 找到888个支持样本
+类别14: 找到899个支持样本
+类别15: 找到900个支持样本
+类别16: 找到899个支持样本
+类别17: 找到887个支持样本
+类别18: 找到897个支持样本
+类别19: 找到887个支持样本
+类别20: 找到873个支持样本
+类别21: 找到900个支持样本
+类别22: 找到898个支持样本
+类别23: 找到900个支持样本
+类别24: 找到894个支持样本
+类别25: 找到887个支持样本
+类别26: 找到887个支持样本
+类别27: 找到892个支持样本
+类别28: 找到898个支持样本
+类别29: 找到887个支持样本
+类别30: 找到899个支持样本
+类别31: 找到887个支持样本
+类别32: 找到883个支持样本
+类别33: 找到884个支持样本
+类别34: 找到865个支持样本
+类别35: 找到840个支持样本
+类别36: 找到884个支持样本
+类别37: 找到894个支持样本
+类别38: 找到900个支持样本
+类别39: 找到892个支持样本
+类别40: 找到887个支持样本
+类别41: 找到884个支持样本
+类别42: 找到876个支持样本
+类别43: 找到897个支持样本
+类别44: 找到886个支持样本
+类别45: 找到896个支持样本
+类别46: 找到888个支持样本
+类别47: 找到888个支持样本
+类别48: 找到898个支持样本
+类别49: 找到881个支持样本
+类别50: 找到896个支持样本
+类别51: 找到887个支持样本
+类别52: 找到888个支持样本
+类别53: 找到889个支持样本
+类别54: 找到898个支持样本
+类别55: 找到900个支持样本
+类别56: 找到886个支持样本
+类别57: 找到897个支持样本
+类别58: 找到879个支持样本
+类别59: 找到875个支持样本
+SupportTrafficDataset初始化完成 (随机采样模式):
+  - 激活类别数量: 60
+  - 每类样本数: 20
+  - 目标序列长度: 10000
+  - 随机采样: True
+  - 支持集: 动态随机采样模式
+  - 查询集样本数: 35000
+  - 数据加载器初始化完成！
+  ✅ 训练集: 299 batches
+  ✅ 验证集: 274 batches
+  ✅ 分布式采样器: 已启用
+
+🧠 设置增强版网络模型...
+增强分类头初始化:
+  - 特征维度: 256
+  - 类别数: 60
+  - TopM层数: 3 (简化)
+  - Cross-Class层数: 3 (核心改进)
+增强网络初始化完成:
+  - 类别数: 60
+  - DF使用SE: True
+  - 查询集特征维度: 256
+  - Meta学习网络: Enhanced (Shot Attention + SE + Deep MLP)
+  ✅ DDP模型包装完成
+  ✅ 模型参数: 4,031,490 总量, 4,031,490 可训练
+
+⚖️ 设置损失函数...
+  ✅ 损失函数: weighted_bce
+
+🎯 设置优化器...
+  ✅ 优化器: adam
+  ✅ 学习率: 5e-05
+
+📊 设置日志系统...
+📁 模型管理器初始化: ./experiments/multi_wtfpad_weight_bce_20sp_medium_mixed_20251116_230434_ddp/checkpoints
+  ✅ 实验目录: ./experiments/multi_wtfpad_weight_bce_20sp_medium_mixed_20251116_230434_ddp
+
+🚀 开始增强版Base Class训练...
+  - 训练轮数: 100
+  - 目标: 从0.9+ mAP提升到0.95+ mAP
+
+Epoch 1/100:
+  📈 Train - Loss:1.4010
+  📊 Val   - Loss:1.4388
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.1050   | 0.1104  | 0.6145       | 0.6298      | 0.1071 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.1104
+💾 保存最佳模型: epoch 1, mAP=0.1104
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 2/100:
+  📈 Train - Loss:1.3375
+  📊 Val   - Loss:1.3816
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.1413   | 0.1435  | 0.6827       | 0.6876      | 0.1619 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.1435
+💾 保存最佳模型: epoch 2, mAP=0.1435
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 3/100:
+  📈 Train - Loss:1.2355
+  📊 Val   - Loss:1.2502
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.2362   | 0.2405  | 0.7686       | 0.7733      | 0.2550 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.2405
+💾 保存最佳模型: epoch 3, mAP=0.2405
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 4/100:
+  📈 Train - Loss:1.1067
+  📊 Val   - Loss:1.1436
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.3147   | 0.3209  | 0.8044       | 0.8071      | 0.3386 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.3209
+💾 保存最佳模型: epoch 4, mAP=0.3209
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 5/100:
+  📈 Train - Loss:1.0186
+  📊 Val   - Loss:1.0278
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.4353   | 0.4408  | 0.8461       | 0.8493      | 0.4319 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.4408
+💾 保存最佳模型: epoch 5, mAP=0.4408
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 6/100:
+  📈 Train - Loss:0.9466
+  📊 Val   - Loss:0.9413
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.5223   | 0.5348  | 0.8726       | 0.8765      | 0.4968 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.5348
+💾 保存最佳模型: epoch 6, mAP=0.5348
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 7/100:
+  📈 Train - Loss:0.9012
+  📊 Val   - Loss:0.8642
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.5663   | 0.5817  | 0.8846       | 0.8892      | 0.5471 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.5817
+💾 保存最佳模型: epoch 7, mAP=0.5817
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 8/100:
+  📈 Train - Loss:0.8572
+  📊 Val   - Loss:0.8341
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.5971   | 0.6142  | 0.8932       | 0.8978      | 0.5680 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.6142
+💾 保存最佳模型: epoch 8, mAP=0.6142
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 9/100:
+  📈 Train - Loss:0.8209
+  📊 Val   - Loss:0.7998
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.6193   | 0.6392  | 0.9000       | 0.9054      | 0.5943 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.6392
+💾 保存最佳模型: epoch 9, mAP=0.6392
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 10/100:
+  📈 Train - Loss:0.7909
+  📊 Val   - Loss:0.7724
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.6427   | 0.6640  | 0.9046       | 0.9105      | 0.6135 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.6640
+💾 保存最佳模型: epoch 10, mAP=0.6640
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 11/100:
+  📈 Train - Loss:0.7643
+  📊 Val   - Loss:0.7465
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.6563   | 0.6811  | 0.9083       | 0.9152      | 0.6316 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.6811
+💾 保存最佳模型: epoch 11, mAP=0.6811
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 12/100:
+  📈 Train - Loss:0.7449
+  📊 Val   - Loss:0.7196
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.6665   | 0.6950  | 0.9097       | 0.9186      | 0.6480 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.6950
+💾 保存最佳模型: epoch 12, mAP=0.6950
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 13/100:
+  📈 Train - Loss:0.7218
+  📊 Val   - Loss:0.7466
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.6600   | 0.6870  | 0.9091       | 0.9158      | 0.6370 | 0.0000 |
+
+Epoch 14/100:
+  📈 Train - Loss:0.7055
+  📊 Val   - Loss:0.7229
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.6717   | 0.7032  | 0.9115       | 0.9204      | 0.6531 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.7032
+💾 保存最佳模型: epoch 14, mAP=0.7032
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 15/100:
+  📈 Train - Loss:0.6868
+  📊 Val   - Loss:0.6954
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.6847   | 0.7190  | 0.9157       | 0.9256      | 0.6637 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.7190
+💾 保存最佳模型: epoch 15, mAP=0.7190
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 16/100:
+  📈 Train - Loss:0.6705
+  📊 Val   - Loss:0.6802
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.6883   | 0.7251  | 0.9168       | 0.9271      | 0.6715 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.7251
+💾 保存最佳模型: epoch 16, mAP=0.7251
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 17/100:
+  📈 Train - Loss:0.6581
+  📊 Val   - Loss:0.6586
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7041   | 0.7417  | 0.9207       | 0.9305      | 0.6866 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.7417
+💾 保存最佳模型: epoch 17, mAP=0.7417
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 18/100:
+  📈 Train - Loss:0.6437
+  📊 Val   - Loss:0.6565
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7077   | 0.7450  | 0.9228       | 0.9324      | 0.6891 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.7450
+💾 保存最佳模型: epoch 18, mAP=0.7450
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 19/100:
+  📈 Train - Loss:0.6312
+  📊 Val   - Loss:0.6728
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.6963   | 0.7414  | 0.9179       | 0.9302      | 0.6858 | 0.0000 |
+
+Epoch 20/100:
+  📈 Train - Loss:0.6197
+  📊 Val   - Loss:0.6379
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7285   | 0.7613  | 0.9289       | 0.9363      | 0.7045 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.7613
+💾 保存最佳模型: epoch 20, mAP=0.7613
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 21/100:
+  📈 Train - Loss:0.6120
+  📊 Val   - Loss:0.6380
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7215   | 0.7612  | 0.9271       | 0.9366      | 0.7044 | 0.0000 |
+
+Epoch 22/100:
+  📈 Train - Loss:0.5981
+  📊 Val   - Loss:0.6236
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7279   | 0.7649  | 0.9291       | 0.9380      | 0.7097 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.7649
+💾 保存最佳模型: epoch 22, mAP=0.7649
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 23/100:
+  📈 Train - Loss:0.5881
+  📊 Val   - Loss:0.6390
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7172   | 0.7649  | 0.9239       | 0.9367      | 0.7118 | 0.0000 |
+
+Epoch 24/100:
+  📈 Train - Loss:0.5801
+  📊 Val   - Loss:0.6281
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7235   | 0.7658  | 0.9274       | 0.9380      | 0.7096 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.7658
+💾 保存最佳模型: epoch 24, mAP=0.7658
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 25/100:
+  📈 Train - Loss:0.5713
+  📊 Val   - Loss:0.6168
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7304   | 0.7762  | 0.9293       | 0.9405      | 0.7198 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.7762
+💾 保存最佳模型: epoch 25, mAP=0.7762
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 26/100:
+  📈 Train - Loss:0.5671
+  📊 Val   - Loss:0.6242
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7366   | 0.7782  | 0.9314       | 0.9407      | 0.7208 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.7782
+💾 保存最佳模型: epoch 26, mAP=0.7782
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 27/100:
+  📈 Train - Loss:0.5542
+  📊 Val   - Loss:0.5960
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7453   | 0.7849  | 0.9334       | 0.9426      | 0.7292 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.7849
+💾 保存最佳模型: epoch 27, mAP=0.7849
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 28/100:
+  📈 Train - Loss:0.5452
+  📊 Val   - Loss:0.6221
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7277   | 0.7757  | 0.9282       | 0.9399      | 0.7227 | 0.0000 |
+
+Epoch 29/100:
+  📈 Train - Loss:0.5481
+  📊 Val   - Loss:0.5956
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7499   | 0.7888  | 0.9355       | 0.9441      | 0.7308 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.7888
+💾 保存最佳模型: epoch 29, mAP=0.7888
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 30/100:
+  📈 Train - Loss:0.5380
+  📊 Val   - Loss:0.6030
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7498   | 0.7878  | 0.9354       | 0.9433      | 0.7309 | 0.0000 |
+
+Epoch 31/100:
+  📈 Train - Loss:0.5325
+  📊 Val   - Loss:0.6013
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7487   | 0.7914  | 0.9339       | 0.9444      | 0.7382 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.7914
+💾 保存最佳模型: epoch 31, mAP=0.7914
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 32/100:
+  📈 Train - Loss:0.5221
+  📊 Val   - Loss:0.5898
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7502   | 0.7955  | 0.9358       | 0.9460      | 0.7388 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.7955
+💾 保存最佳模型: epoch 32, mAP=0.7955
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 33/100:
+  📈 Train - Loss:0.5186
+  📊 Val   - Loss:0.5973
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7573   | 0.7972  | 0.9380       | 0.9467      | 0.7389 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.7972
+💾 保存最佳模型: epoch 33, mAP=0.7972
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 34/100:
+  📈 Train - Loss:0.5139
+  📊 Val   - Loss:0.5858
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7653   | 0.8015  | 0.9394       | 0.9472      | 0.7471 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.8015
+💾 保存最佳模型: epoch 34, mAP=0.8015
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 35/100:
+  📈 Train - Loss:0.5117
+  📊 Val   - Loss:0.5879
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7486   | 0.7948  | 0.9348       | 0.9452      | 0.7413 | 0.0000 |
+
+Epoch 36/100:
+  📈 Train - Loss:0.5062
+  📊 Val   - Loss:0.5655
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7614   | 0.8035  | 0.9386       | 0.9480      | 0.7490 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.8035
+💾 保存最佳模型: epoch 36, mAP=0.8035
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 37/100:
+  📈 Train - Loss:0.4992
+  📊 Val   - Loss:0.6145
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7498   | 0.7967  | 0.9345       | 0.9450      | 0.7432 | 0.0000 |
+
+Epoch 38/100:
+  📈 Train - Loss:0.4975
+  📊 Val   - Loss:0.5836
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7550   | 0.8025  | 0.9373       | 0.9478      | 0.7449 | 0.0000 |
+
+Epoch 39/100:
+  📈 Train - Loss:0.4913
+  📊 Val   - Loss:0.5810
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7593   | 0.8038  | 0.9379       | 0.9477      | 0.7519 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.8038
+💾 保存最佳模型: epoch 39, mAP=0.8038
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 40/100:
+  📈 Train - Loss:0.4876
+  📊 Val   - Loss:0.5810
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7611   | 0.8020  | 0.9386       | 0.9469      | 0.7480 | 0.0000 |
+
+Epoch 41/100:
+  📈 Train - Loss:0.4812
+  📊 Val   - Loss:0.5832
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7551   | 0.8037  | 0.9374       | 0.9476      | 0.7488 | 0.0000 |
+
+Epoch 42/100:
+  📈 Train - Loss:0.4777
+  📊 Val   - Loss:0.5817
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7526   | 0.8038  | 0.9366       | 0.9482      | 0.7488 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.8038
+💾 保存最佳模型: epoch 42, mAP=0.8038
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 43/100:
+  📈 Train - Loss:0.4735
+  📊 Val   - Loss:0.5801
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7508   | 0.8057  | 0.9360       | 0.9485      | 0.7488 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.8057
+💾 保存最佳模型: epoch 43, mAP=0.8057
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 44/100:
+  📈 Train - Loss:0.4708
+  📊 Val   - Loss:0.5741
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7701   | 0.8106  | 0.9415       | 0.9496      | 0.7569 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.8106
+💾 保存最佳模型: epoch 44, mAP=0.8106
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 45/100:
+  📈 Train - Loss:0.4641
+  📊 Val   - Loss:0.5737
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7615   | 0.8091  | 0.9385       | 0.9490      | 0.7565 | 0.0000 |
+
+Epoch 46/100:
+  📈 Train - Loss:0.4639
+  📊 Val   - Loss:0.5973
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7664   | 0.8087  | 0.9407       | 0.9492      | 0.7540 | 0.0000 |
+
+Epoch 47/100:
+  📈 Train - Loss:0.4605
+  📊 Val   - Loss:0.5792
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7657   | 0.8103  | 0.9405       | 0.9500      | 0.7560 | 0.0000 |
+
+Epoch 48/100:
+  📈 Train - Loss:0.4573
+  📊 Val   - Loss:0.5889
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7577   | 0.8055  | 0.9378       | 0.9482      | 0.7513 | 0.0000 |
+
+Epoch 49/100:
+  📈 Train - Loss:0.4558
+  📊 Val   - Loss:0.5848
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7630   | 0.8095  | 0.9395       | 0.9495      | 0.7559 | 0.0000 |
+
+Epoch 50/100:
+  📈 Train - Loss:0.4504
+  📊 Val   - Loss:0.5670
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7725   | 0.8121  | 0.9426       | 0.9503      | 0.7601 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.8121
+💾 保存最佳模型: epoch 50, mAP=0.8121
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 51/100:
+  📈 Train - Loss:0.4473
+  📊 Val   - Loss:0.5640
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7673   | 0.8127  | 0.9413       | 0.9506      | 0.7570 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.8127
+💾 保存最佳模型: epoch 51, mAP=0.8127
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 52/100:
+  📈 Train - Loss:0.4437
+  📊 Val   - Loss:0.5644
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7723   | 0.8145  | 0.9423       | 0.9513      | 0.7598 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.8145
+💾 保存最佳模型: epoch 52, mAP=0.8145
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 53/100:
+  📈 Train - Loss:0.4439
+  📊 Val   - Loss:0.5731
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7676   | 0.8105  | 0.9405       | 0.9497      | 0.7554 | 0.0000 |
+
+Epoch 54/100:
+  📈 Train - Loss:0.4387
+  📊 Val   - Loss:0.5923
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7739   | 0.8137  | 0.9418       | 0.9503      | 0.7604 | 0.0000 |
+
+Epoch 55/100:
+  📈 Train - Loss:0.4365
+  📊 Val   - Loss:0.5708
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7734   | 0.8156  | 0.9429       | 0.9515      | 0.7603 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.8156
+💾 保存最佳模型: epoch 55, mAP=0.8156
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 56/100:
+  📈 Train - Loss:0.4382
+  📊 Val   - Loss:0.5988
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7627   | 0.8102  | 0.9396       | 0.9499      | 0.7545 | 0.0000 |
+
+Epoch 57/100:
+  📈 Train - Loss:0.4355
+  📊 Val   - Loss:0.5751
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7712   | 0.8169  | 0.9416       | 0.9514      | 0.7631 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.8169
+💾 保存最佳模型: epoch 57, mAP=0.8169
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 58/100:
+  📈 Train - Loss:0.4297
+  📊 Val   - Loss:0.5956
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7695   | 0.8118  | 0.9408       | 0.9495      | 0.7595 | 0.0000 |
+
+Epoch 59/100:
+  📈 Train - Loss:0.4294
+  📊 Val   - Loss:0.5758
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7671   | 0.8119  | 0.9405       | 0.9500      | 0.7607 | 0.0000 |
+
+Epoch 60/100:
+  📈 Train - Loss:0.4278
+  📊 Val   - Loss:0.5786
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7749   | 0.8166  | 0.9427       | 0.9513      | 0.7627 | 0.0000 |
+
+Epoch 61/100:
+  📈 Train - Loss:0.4255
+  📊 Val   - Loss:0.5796
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7752   | 0.8148  | 0.9430       | 0.9508      | 0.7616 | 0.0000 |
+
+Epoch 62/100:
+  📈 Train - Loss:0.4219
+  📊 Val   - Loss:0.5783
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7711   | 0.8146  | 0.9417       | 0.9508      | 0.7632 | 0.0000 |
+
+Epoch 63/100:
+  📈 Train - Loss:0.4193
+  📊 Val   - Loss:0.5884
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7698   | 0.8144  | 0.9413       | 0.9509      | 0.7616 | 0.0000 |
+
+Epoch 64/100:
+  📈 Train - Loss:0.4182
+  📊 Val   - Loss:0.5699
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7755   | 0.8176  | 0.9427       | 0.9515      | 0.7663 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.8176
+💾 保存最佳模型: epoch 64, mAP=0.8176
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 65/100:
+  📈 Train - Loss:0.4153
+  📊 Val   - Loss:0.5872
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7692   | 0.8128  | 0.9408       | 0.9495      | 0.7639 | 0.0000 |
+
+Epoch 66/100:
+  📈 Train - Loss:0.4146
+  📊 Val   - Loss:0.5806
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7772   | 0.8158  | 0.9428       | 0.9506      | 0.7635 | 0.0000 |
+
+Epoch 67/100:
+  📈 Train - Loss:0.4123
+  📊 Val   - Loss:0.5778
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7753   | 0.8192  | 0.9430       | 0.9521      | 0.7656 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.8192
+💾 保存最佳模型: epoch 67, mAP=0.8192
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 68/100:
+  📈 Train - Loss:0.4130
+  📊 Val   - Loss:0.5848
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7704   | 0.8147  | 0.9416       | 0.9506      | 0.7633 | 0.0000 |
+
+Epoch 69/100:
+  📈 Train - Loss:0.4107
+  📊 Val   - Loss:0.5779
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7745   | 0.8162  | 0.9423       | 0.9508      | 0.7644 | 0.0000 |
+
+Epoch 70/100:
+  📈 Train - Loss:0.4083
+  📊 Val   - Loss:0.5844
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7772   | 0.8167  | 0.9431       | 0.9511      | 0.7641 | 0.0000 |
+
+Epoch 71/100:
+  📈 Train - Loss:0.4091
+  📊 Val   - Loss:0.6010
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7659   | 0.8091  | 0.9404       | 0.9490      | 0.7602 | 0.0000 |
+
+Epoch 72/100:
+  📈 Train - Loss:0.4069
+  📊 Val   - Loss:0.5891
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7783   | 0.8172  | 0.9436       | 0.9512      | 0.7643 | 0.0000 |
+
+Epoch 73/100:
+  📈 Train - Loss:0.4080
+  📊 Val   - Loss:0.5826
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7819   | 0.8196  | 0.9445       | 0.9518      | 0.7681 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.8196
+💾 保存最佳模型: epoch 73, mAP=0.8196
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 74/100:
+  📈 Train - Loss:0.4051
+  📊 Val   - Loss:0.5731
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7851   | 0.8210  | 0.9455       | 0.9525      | 0.7683 | 0.0000 |
+  🎉 新最佳 sig_mAP: 0.8210
+💾 保存最佳模型: epoch 74, mAP=0.8210
+⚠️ 保存指标历史失败: Object of type float32 is not JSON serializable
+
+Epoch 75/100:
+  📈 Train - Loss:0.4060
+  📊 Val   - Loss:0.5850
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7820   | 0.8202  | 0.9441       | 0.9519      | 0.7686 | 0.0000 |
+
+Epoch 76/100:
+  📈 Train - Loss:0.4022
+  📊 Val   - Loss:0.5929
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7789   | 0.8185  | 0.9442       | 0.9518      | 0.7655 | 0.0000 |
+
+Epoch 77/100:
+  📈 Train - Loss:0.4034
+  📊 Val   - Loss:0.5754
+📊 多标签分类指标摘要:
+🚀 分布式训练初始化完成 - Rank: 3/4
+🚀 分布式训练初始化完成 - Rank: 1/4
+🚀 分布式训练初始化完成 - Rank: 2/4
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7824   | 0.8202  | 0.9450       | 0.9524      | 0.7679 | 0.0000 |
+
+Epoch 78/100:
+  📈 Train - Loss:0.3990
+  📊 Val   - Loss:0.5837
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7813   | 0.8189  | 0.9443       | 0.9517      | 0.7663 | 0.0000 |
+
+Epoch 79/100:
+  📈 Train - Loss:0.4015
+  📊 Val   - Loss:0.5876
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7833   | 0.8196  | 0.9448       | 0.9517      | 0.7672 | 0.0000 |
+
+Epoch 80/100:
+  📈 Train - Loss:0.3996
+  📊 Val   - Loss:0.5804
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7826   | 0.8199  | 0.9445       | 0.9517      | 0.7676 | 0.0000 |
+
+Epoch 81/100:
+  📈 Train - Loss:0.3971
+  📊 Val   - Loss:0.5876
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7842   | 0.8204  | 0.9452       | 0.9522      | 0.7683 | 0.0000 |
+
+Epoch 82/100:
+  📈 Train - Loss:0.3994
+  📊 Val   - Loss:0.5767
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7812   | 0.8206  | 0.9446       | 0.9522      | 0.7680 | 0.0000 |
+
+Epoch 83/100:
+  📈 Train - Loss:0.3970
+  📊 Val   - Loss:0.5873
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7799   | 0.8197  | 0.9441       | 0.9518      | 0.7681 | 0.0000 |
+
+Epoch 84/100:
+  📈 Train - Loss:0.3966
+  📊 Val   - Loss:0.5850
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7794   | 0.8190  | 0.9438       | 0.9518      | 0.7665 | 0.0000 |
+
+Epoch 85/100:
+  📈 Train - Loss:0.3962
+  📊 Val   - Loss:0.5862
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7793   | 0.8183  | 0.9435       | 0.9511      | 0.7672 | 0.0000 |
+
+Epoch 86/100:
+  📈 Train - Loss:0.3961
+  📊 Val   - Loss:0.5937
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7765   | 0.8174  | 0.9429       | 0.9509      | 0.7662 | 0.0000 |
+
+Epoch 87/100:
+  📈 Train - Loss:0.3953
+  📊 Val   - Loss:0.5844
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7812   | 0.8205  | 0.9442       | 0.9518      | 0.7690 | 0.0000 |
+
+Epoch 88/100:
+  📈 Train - Loss:0.3952
+  📊 Val   - Loss:0.5843
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7787   | 0.8193  | 0.9437       | 0.9515      | 0.7678 | 0.0000 |
+
+Epoch 89/100:
+  📈 Train - Loss:0.3919
+  📊 Val   - Loss:0.5969
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7804   | 0.8191  | 0.9440       | 0.9514      | 0.7675 | 0.0000 |
+
+Epoch 90/100:
+  📈 Train - Loss:0.3893
+  📊 Val   - Loss:0.5968
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7770   | 0.8177  | 0.9431       | 0.9509      | 0.7659 | 0.0000 |
+
+Epoch 91/100:
+  📈 Train - Loss:0.3945
+  📊 Val   - Loss:0.5864
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7814   | 0.8198  | 0.9445       | 0.9519      | 0.7688 | 0.0000 |
+
+Epoch 92/100:
+  📈 Train - Loss:0.3904
+  📊 Val   - Loss:0.5869
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7817   | 0.8202  | 0.9445       | 0.9520      | 0.7682 | 0.0000 |
+
+Epoch 93/100:
+  📈 Train - Loss:0.3927
+  📊 Val   - Loss:0.5857
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7798   | 0.8195  | 0.9438       | 0.9514      | 0.7682 | 0.0000 |
+
+Epoch 94/100:
+  📈 Train - Loss:0.3924
+  📊 Val   - Loss:0.5817
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7798   | 0.8197  | 0.9440       | 0.9518      | 0.7684 | 0.0000 |
+
+Epoch 95/100:
+  📈 Train - Loss:0.3919
+  📊 Val   - Loss:0.5909
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7801   | 0.8187  | 0.9440       | 0.9513      | 0.7675 | 0.0000 |
+
+Epoch 96/100:
+  📈 Train - Loss:0.3881
+  📊 Val   - Loss:0.5913
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7750   | 0.8171  | 0.9425       | 0.9507      | 0.7655 | 0.0000 |
+
+Epoch 97/100:
+  📈 Train - Loss:0.3912
+  📊 Val   - Loss:0.6008
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7765   | 0.8174  | 0.9428       | 0.9507      | 0.7663 | 0.0000 |
+
+Epoch 98/100:
+  📈 Train - Loss:0.3901
+  📊 Val   - Loss:0.5873
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7777   | 0.8185  | 0.9436       | 0.9514      | 0.7677 | 0.0000 |
+
+Epoch 99/100:
+  📈 Train - Loss:0.3926
+  📊 Val   - Loss:0.5890
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7812   | 0.8196  | 0.9443       | 0.9517      | 0.7679 | 0.0000 |
+
+Epoch 100/100:
+  📈 Train - Loss:0.3929
+  📊 Val   - Loss:0.5849
+📊 多标签分类指标摘要:
+Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |
+Values:  | 0.7808   | 0.8200  | 0.9440       | 0.9517      | 0.7687 | 0.0000 |
+
+✅ 训练完成！最佳mAP: 0.8210
+🎉 分布式训练完成！
+
