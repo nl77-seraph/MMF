@@ -26,12 +26,12 @@ warnings.filterwarnings('ignore')
 # 添加模块路径
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from data.meta_traffic_dataloader import MetaTrafficDataLoader
-from models.feature_extractors_enhanced import EnhancedMultiMetaFingerNet  # 使用增强版
-from utils.metrics import MultiLabelMetrics
+from models.feature_extractors import EnhancedMultiMetaFingerNet  # 使用增强版
+from utils.metrics import MultiLabelMetrics#, MetricRecorder
 from utils.loss_functions import WeightedBCELoss, FocalLoss, AsymmetricLoss
 from utils.model_manager import ModelManager
 from utils.misc import *
-
+os.environ['CUDA_VISIBLE_DEVICES'] = '2,4'
 class EnhancedTrainer:
     """
     增强版训练器
@@ -256,7 +256,7 @@ class EnhancedTrainer:
         
         checkpoint_dir = os.path.join(self.exp_dir, 'checkpoints')
         self.model_manager = ModelManager(checkpoint_dir)
-        
+        #self.metric_recorder = MetricRecorder(self.exp_dir)
         print(f"  ✅ 实验目录: {self.exp_dir}")
     
     def train_epoch(self, epoch):
@@ -379,7 +379,7 @@ class EnhancedTrainer:
                 #MultiLabelMetrics.print_metrics_summary(train_metrics)
                 print(f"  📊 Val   - Loss:{val_loss:.4f}")
                 MultiLabelMetrics.print_metrics_summary(val_metrics)
-                
+                #self.metric_recorder.update(epoch, val_metrics)
                 is_best = val_metrics['sig_mAP'] > self.best_map
                 if is_best:
                     self.best_map = val_metrics['sig_mAP']
@@ -403,6 +403,7 @@ class EnhancedTrainer:
         
         if is_main_process():
             print(f"\n✅ 训练完成！最佳mAP: {self.best_map:.4f}")
+            #self.metric_recorder.save_metrics()
             if self.writer:
                 self.writer.close()
 

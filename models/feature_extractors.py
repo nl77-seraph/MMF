@@ -470,3 +470,63 @@ class EnhancedMultiMetaFingerNet(nn.Module):
         }
 
 
+def test_enhanced_network():
+    """测试增强网络"""
+    print("="*60)
+    print("测试增强的Multi-Meta-Finger网络")
+    print("="*60)
+    
+    # 设置参数
+    batch_size = 4
+    num_classes = 3
+    shots_per_class = 2
+    query_length = 30000
+    
+    # 创建增强网络
+    net = EnhancedMultiMetaFingerNet(
+        num_classes=num_classes, 
+        dropout=0.5, 
+        support_blocks=0,
+        use_se_in_df=False  # 先不用SE，测试基础版本
+    )
+    
+    # 创建模拟数据
+    query_data = torch.randn(batch_size, query_length)
+    support_data = torch.randn(num_classes, shots_per_class, query_length)
+    support_masks = torch.ones(num_classes, shots_per_class, query_length)
+    
+    print(f"\n输入形状:")
+    print(f"  查询集: {query_data.shape}")
+    print(f"  支持集: {support_data.shape}")
+    print(f"  支持集mask: {support_masks.shape}")
+    
+    # 前向传播
+    print(f"\n执行前向传播...")
+    with torch.no_grad():
+        results = net(query_data, support_data, support_masks)
+    
+    print(f"\n输出形状:")
+    print(f"  查询集特征: {results['query_features'].shape}")
+    print(f"  动态权重: {results['dynamic_weights'].shape}")
+    print(f"  重加权特征: {results['reweighted_features'].shape}")
+    print(f"  分类logits: {results['logits'].shape}")
+    print(f"  预测结果: {results['predictions'].shape}")
+    print(f"  类别概率: {results['probabilities'].shape}")
+    
+    # 验证输出维度
+    assert results['query_features'].shape == (batch_size, 60, 256)
+    assert results['dynamic_weights'].shape == (num_classes, 256)
+    assert results['reweighted_features'].shape == (batch_size * num_classes, 256, 60)
+    assert results['logits'].shape == (batch_size, num_classes)
+    
+    print(f"\n✅ 增强网络测试完成!")
+    print(f"\n改进点:")
+    print(f"  ✓ Shot Attention融合")
+    print(f"  ✓ SE通道注意力")
+    print(f"  ✓ 深层MLP权重生成")
+    print(f"  ✓ 残差连接")
+
+
+if __name__ == "__main__":
+    test_enhanced_network()
+

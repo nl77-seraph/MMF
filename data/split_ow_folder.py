@@ -38,6 +38,8 @@ def main():
     ap.add_argument("--seed", type=int, default=42, help="随机种子，默认 42（可复现）")
     ap.add_argument("--move", action="store_true", help="改为移动文件（默认复制）")
     ap.add_argument("--ext", type=str, default="", help="只处理这些后缀，逗号分隔，如: jpg,png,txt（默认全部文件）")
+    ap.add_argument("--fixed", action="store_true", help="固定少数的fixed number，默认False")
+    
     args = ap.parse_args()
 
     ow = args.ow.resolve()
@@ -67,16 +69,20 @@ def main():
 
     for cls_dir in sorted(classes, key=lambda x: int(x.name)):
         cls_name = cls_dir.name
-        files = list_files_one_class(cls_dir, allow_exts)
+        files = list_files_one_class(cls_dir, allow_exts) 
         if not files:
             print(f"[跳过] 类别 {cls_name} 为空。")
             continue
 
         random.shuffle(files)
         k = int(len(files) * args.ratio)
-        train_files = files[:k]
-        test_files  = files[k:]
-
+        if args.fixed:
+            k = 50
+            train_files = files[:k]
+            test_files  = files[-k:]
+        else:
+            train_files = files[:k]
+            test_files  = files[k:]
         # 建立目标类别目录
         dst_train_cls = (out_train / cls_name)
         dst_test_cls  = (out_test / cls_name)

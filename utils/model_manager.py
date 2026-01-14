@@ -57,7 +57,7 @@ class ModelManager:
         }
         
         # 保存最新模型
-        torch.save(checkpoint, self.latest_model_path)
+        #torch.save(checkpoint, self.latest_model_path)
         
         # 如果是最佳模型，保存到best_model
         if is_best:
@@ -69,13 +69,13 @@ class ModelManager:
                 'metrics': metrics
             })
             self.save_metrics_history()
-        # 保存定期checkpoint
-        if (epoch + 1) % 10 == 0:
-            epoch_checkpoint_path = os.path.join(
-                self.checkpoint_dir, 
-                f'checkpoint_epoch_{epoch+1}.pth'
-            )
-            torch.save(checkpoint, epoch_checkpoint_path)
+        # # 保存定期checkpoint
+        # if (epoch + 1) % 50 == 0:
+        #     epoch_checkpoint_path = os.path.join(
+        #         self.checkpoint_dir, 
+        #         f'checkpoint_epoch_{epoch+1}.pth'
+        #     )
+        #     torch.save(checkpoint, epoch_checkpoint_path)
         
 
     

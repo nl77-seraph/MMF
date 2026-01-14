@@ -277,7 +277,7 @@ def generate_datasets(
         source_root=source_root,
         output_root=output_root,
         num_classes=60,
-        overlap_range=(0.0, 0.4),
+        overlap_range=(0.0, 0.2),
         random_seed=random_seed
     )
     

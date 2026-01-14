@@ -65,6 +65,7 @@ class QueryTrafficDataset(Dataset):
         for filename in query_file_names:
             # 解析文件名中的标签
             labels = self._parse_labels_from_filename(filename)
+            
             if labels:  # 只保留有效标签的文件
                 file_path = os.path.join(self.query_files_dir, filename)
                 self.query_index.append({
@@ -72,6 +73,7 @@ class QueryTrafficDataset(Dataset):
                     'labels': labels,
                     'file_path': file_path
                 })
+                
         if is_main_process():
             print(f"有效查询样本数量: {len(self.query_index)}")
     
@@ -85,13 +87,16 @@ class QueryTrafficDataset(Dataset):
         
         labels = []
         for part in parts:
-            try:
-                label = int(part)
-                if label in self.activated_classes:
-                    labels.append(label)
-            except ValueError:
-                # 非数字部分认为是随机文件名，停止解析
-                break
+            if 'novel' in part:
+                continue
+            else:
+                try:
+                    label = int(part)
+                    if label in self.activated_classes:
+                        labels.append(label)
+                except ValueError:
+                    # 非数字部分认为是随机文件名，停止解析
+                    break
         
         return labels
     

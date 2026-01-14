@@ -1,17 +1,4 @@
-"""
-Few-shot Fine-tuning 脚本
 
-参考 Few-shot Object Detection via Feature Reweighting 的 metatune.data 配置:
-- tuning=1: 开启微调模式
-- neg=0: 不使用负样本过滤，学习率因子更小
-- repeat=200: 重复K-shot数据以增加迭代次数  
-- dynamic=0: 不动态重采样，直接使用预生成的few-shot数据
-
-支持三种微调模式:
-- head_only: 仅微调分类头
-- head_meta: 微调分类头 + MetaLearnet
-- full: 全模型微调
-"""
 
 import torch
 import torch.nn as nn
@@ -31,19 +18,22 @@ import json
 from datetime import datetime
 import argparse
 from tqdm import tqdm
+
+def log(msg):
+    print(f"[{datetime.now()}][rank {dist.get_rank() if dist.is_initialized() else 0}] {msg}", flush=True)
 import warnings
 warnings.filterwarnings('ignore')
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from data.meta_traffic_dataset import QueryTrafficDataset, SupportTrafficDataset
-from models.feature_extractors_optimized import OptimizedMultiMetaFingerNet
+from models.feature_extractors import EnhancedMultiMetaFingerNet
 from utils.metrics import MultiLabelMetrics
 from utils.metrics import sigmoid
 from utils.loss_functions import WeightedBCELoss, FocalLoss, AsymmetricLoss
 from utils.model_manager import ModelManager
 from utils.misc import setup_distributed_training, cleanup_distributed_training, is_main_process, setup_seed
 
-#os.environ['CUDA_VISIBLE_DEVICES'] = '4,5,6,7'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0,3'
 class RepeatDataset(Dataset):
     """
     重复数据集包装器
@@ -321,13 +311,12 @@ class FewshotTrainer:
         num_classes = len(base_classes) + len(novel_classes)
         
         # 创建模型
-        self.model = OptimizedMultiMetaFingerNet(
+
+        self.model = EnhancedMultiMetaFingerNet(
             num_classes=num_classes,
             dropout=self.config.get('dropout', 0.15),
-            use_cross_attention=self.config.get('use_cross_attention', False),
-            num_topm_layers=self.config.get('num_topm_layers', 2),
-            meta_learnet_type=self.config.get('meta_learnet_type', 'lightweight'),
-            use_cosine_classifier=self.config.get('use_cosine_classifier', False)
+            support_blocks=self.config.get('support_blocks', 0),
+            use_se_in_df=self.config.get('use_se_in_df', False)
         ).to(self.device)
         
         # 加载checkpoint
@@ -731,7 +720,8 @@ class FewshotTrainer:
             all_labels, 
             novel_classes=novel_classes,
             activated_classes=all_classes,
-            threshold=0.5
+            threshold=0.5,
+            k=self.config.get('tabs','3')
         )
         metrics['novel_metrics'] = novel_metrics
         
@@ -747,13 +737,13 @@ class FewshotTrainer:
             MultiLabelMetrics.print_novel_class_metrics(novel_metrics, novel_classes)
             
             # 打印前5个batch的预测结果
-            self._print_first_5_batches(
-                first_5_batches_logits, 
-                first_5_batches_labels, 
-                first_5_batches_metadata,
-                all_classes,
-                novel_classes
-            )
+            # self._print_first_5_batches(
+            #     first_5_batches_logits, 
+            #     first_5_batches_labels, 
+            #     first_5_batches_metadata,
+            #     all_classes,
+            #     novel_classes
+            # )
         
         return avg_loss, metrics
     
@@ -851,8 +841,13 @@ class FewshotTrainer:
             self.current_epoch = epoch
             epoch_start = time.time()
             
+            #log("train_epoch start")
             train_loss, avg_batch_time = self.train_epoch(epoch)
+            #log("train_epoch done")
+
+            #log("validate_epoch start")
             val_loss, val_metrics = self.validate_epoch(epoch)
+            #log("validate_epoch done")
             
             epoch_time = time.time() - epoch_start
             
@@ -869,6 +864,8 @@ class FewshotTrainer:
                         print(f"  🎉 新最佳 sig_mAP: {self.best_map:.4f}")
                     
                     model_to_save = self.model.module if self.is_distributed else self.model
+                    t0 = time.time()
+                    #log(f"save_checkpoint start, time: {t0}")
                     self.model_manager.save_checkpoint(
                         model=model_to_save,
                         optimizer=self.optimizer,
@@ -877,10 +874,11 @@ class FewshotTrainer:
                         metrics=val_metrics,
                         is_best=is_best
                     )
-            
+                    #log(f"save_checkpoint done, time: {time.time() - t0}")
             if self.is_distributed:
+                #log("barrier start")
                 dist.barrier()
-            
+                #log("barrier done")
             if self.scheduler:
                 self.scheduler.step()
         

@@ -3,7 +3,7 @@ import sys
 from datetime import datetime
 
 # 指定输出文件路径
-output_file = "wtf_pad.txt"  # 可以修改为你想要的文件名
+output_file = "02_4tab+04_5tab_disjoint.txt"  # 可以修改为你想要的文件名
 
 def run_and_log(cmd, description, log_file):
     """运行命令并同时输出到控制台和文件"""
@@ -29,22 +29,13 @@ def run_and_log(cmd, description, log_file):
     
     return res
 
-# # 运行第一个配置
-# cmd2 = [sys.executable, "train_enhanced.py",
-#         "--config", "configs/Front_weight_bce_short_support_mixed.json"]
-# res2 = run_and_log(cmd2, "front", output_file)
+# 运行第一个配置
+cmd2 = [sys.executable, "train_enhanced.py",
+        "--config", "configs/unseen_combinations/02over_4tab.json"]
+res2 = run_and_log(cmd2, "4tab", output_file)
 
-# # 运行第二个配置
-# cmd3 = [sys.executable, "train_enhanced.py",
-#         "--config", "configs/multi_walkie_weight_bce_short_support_mixed.json"]
-# res3 = run_and_log(cmd3, "walkie", output_file)
-# # 运行第二个配置
-# cmd4 = [sys.executable, "train_enhanced.py",
-#         "--config", "configs/silver_weight_bce_short_support_mixed.json"]
-# res4 = run_and_log(cmd4, "silver", output_file)
-# 运行第二个配置
-cmd5 = [sys.executable, "train_enhanced.py",
-        "--config", "configs/wtf_pad_weight_bce_short_support_mixed.json"]
-res5 = run_and_log(cmd5, "wtf_pad", output_file)
+cmd4 = [sys.executable, "train_enhanced.py",
+        "--config", "configs/unseen_combinations/04over_5tab.json"]
+res4 = run_and_log(cmd4, "5tab", output_file)
 
 print(f"\n所有日志已保存到: {output_file}")

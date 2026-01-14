@@ -145,7 +145,7 @@ class EnhancedClassificationHead(nn.Module):
             nn.LayerNorm(embed_dim) for _ in range(num_topm_layers)
         ])
         
-        # 步骤2: Cross-Class Attention (核心改进)
+
         self.cross_class_layers = nn.ModuleList([
             CrossClassAttention(embed_dim, num_heads, dropout)
             for _ in range(num_cross_layers)
@@ -239,3 +239,63 @@ class EnhancedClassificationHead(nn.Module):
         
         return logits
     
+
+def test_enhanced_classification_head():
+    """测试增强分类头"""
+    print("="*60)
+    print("测试增强的分类头")
+    print("="*60)
+    
+    # 设置参数
+    batch_size = 4
+    num_classes = 3
+    feature_dim = 256
+    seq_len = 119
+    
+    # 创建模拟数据 (重加权后的特征)
+    reweighted_features = torch.randn(batch_size * num_classes, feature_dim, seq_len)
+    
+    print(f"\n输入形状:")
+    print(f"  重加权特征: {reweighted_features.shape}")
+    
+    # 创建增强分类头
+    head = EnhancedClassificationHead(
+        feature_dim=feature_dim,
+        num_classes=num_classes,
+        seq_len=seq_len,
+        num_topm_layers=2,  # 简化版，仅2层
+        num_cross_layers=2   # Cross-Class层数
+    )
+    
+    # 前向传播
+    print(f"\n执行前向传播...")
+    with torch.no_grad():
+        logits = head(reweighted_features)
+        predictions, probabilities = head.predict(reweighted_features)
+    
+    print(f"\n输出形状:")
+    print(f"  Logits: {logits.shape}")
+    print(f"  Predictions: {predictions.shape}")
+    print(f"  Probabilities: {probabilities.shape}")
+    
+    # 验证
+    assert logits.shape == (batch_size, num_classes)
+    assert predictions.shape == (batch_size, num_classes)
+    assert probabilities.shape == (batch_size, num_classes)
+    
+    print(f"\n示例输出 (第一个样本):")
+    print(f"  Logits: {logits[0].numpy()}")
+    print(f"  Probabilities: {probabilities[0].numpy()}")
+    print(f"  Predictions: {predictions[0].numpy()}")
+    
+    print(f"\n✅ 增强分类头测试完成!")
+    print(f"\n改进点:")
+    print(f"  ✓ 简化TopM MHSA (减少到{head.num_topm_layers}层)")
+    print(f"  ✓ Cross-Class Attention ({head.num_cross_layers}层)")
+    print(f"  ✓ 增强MLP分类器 (3层)")
+    print(f"  ✓ 保持独立二分类结构")
+
+
+if __name__ == "__main__":
+    test_enhanced_classification_head()
+
