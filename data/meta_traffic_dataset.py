@@ -1,13 +1,3 @@
-"""
-基于Few-shot Detection思想的简化流量数据加载器
-参考Fewshot_Detection-master的listDataset和MetaDataset设计
-适配Multi-tab Website Fingerprinting场景
-
-关键设计：
-1. 查询集：多标签，长度30000
-2. 支持集：所有类别(0-60)，长度30000，用mask记录有效部分
-3. 直接类别ID映射，无需复杂Episode构建
-"""
 
 import os
 import random
@@ -55,12 +45,14 @@ class QueryTrafficDataset(Dataset):
     
     def _load_query_index(self):
         """加载查询集索引"""
-        if not os.path.exists(self.json_index_path):
-            raise FileNotFoundError(f"JSON索引文件不存在: {self.json_index_path}")
-        
-        with open(self.json_index_path, 'r') as f:
-            query_file_names = json.load(f)
-        
+        if os.path.exists(self.json_index_path):
+            with open(self.json_index_path, 'r') as f:
+                query_file_names = json.load(f)
+        else:
+            # 获取目录下所有以 .pkl 结尾的文件名
+            query_file_names = [f for f in os.listdir(self.query_files_dir) if f.endswith('.pkl')]
+            # 建议排序，确保不同机器或不同运行次序下加载顺序一致
+            query_file_names.sort()
         self.query_index = []
         for filename in query_file_names:
             # 解析文件名中的标签
@@ -146,8 +138,11 @@ class QueryTrafficDataset(Dataset):
             sample_data = pickle.load(f)
         
         # 处理不同的数据格式
-        if isinstance(sample_data, dict) and 'data' in sample_data:
-            raw_data = sample_data['data']
+        if isinstance(sample_data, dict) :
+            if 'data' in sample_data:
+                raw_data = sample_data['data']
+            else: 
+                raw_data = sample_data['direction']
         elif isinstance(sample_data, (list, np.ndarray)):
             raw_data = sample_data
         else:
@@ -321,8 +316,11 @@ class SupportTrafficDataset(Dataset):
                 sample_data = pickle.load(f)
             
             # 处理不同的数据格式
-            if isinstance(sample_data, dict) and 'data' in sample_data:
-                raw_data = sample_data['data']
+            if isinstance(sample_data, dict) :
+                if 'data' in sample_data:
+                    raw_data = sample_data['data']
+                else: 
+                    raw_data = sample_data['direction']
             elif isinstance(sample_data, (list, np.ndarray)):
                 raw_data = sample_data
             else:
@@ -430,80 +428,3 @@ class SupportTrafficDataset(Dataset):
             self.class_order[idx]
         )
 
-
-def test_datasets():
-    """测试数据加载器"""
-    print("="*60)
-    print("测试Meta Traffic Dataset")
-    print("="*60)
-    
-    # 设置路径（需要根据实际情况调整）
-    query_json_path = "/home/ubuntu22/multi-tab-work/meta-finger/data/3tab_task/3tab_train.json"
-    query_files_dir = "/home/ubuntu22/multi-tab-work/meta-finger/data/3tab_task/3tab_files"
-    support_root_dir = "/home/ubuntu22/multi-tab-work/meta-finger/data/3tab_task/CW_single_tab/train"
-    
-    # 检查路径存在性
-    paths_to_check = [query_json_path, query_files_dir, support_root_dir]
-    for path in paths_to_check:
-        if os.path.exists(path):
-            print(f"✅ 路径存在: {path}")
-        else:
-            print(f"❌ 路径不存在: {path}")
-    
-    # 如果路径不存在，创建模拟测试
-    if not all(os.path.exists(p) for p in paths_to_check):
-        print("\n⚠️  实际数据路径不存在，跳过数据加载测试")
-        print("请确保以下路径存在后再测试:")
-        for path in paths_to_check:
-            print(f"  - {path}")
-        return
-    
-    try:
-        # 测试查询集
-        print("\n📊 测试查询集数据加载器...")
-        query_dataset = QueryTrafficDataset(
-            json_index_path=query_json_path,
-            query_files_dir=query_files_dir,
-            target_length=30000,
-            activated_classes=list(range(60))  # 0-59
-        )
-        
-        if len(query_dataset) > 0:
-            query_data, query_labels, metadata = query_dataset[0]
-            print(f"查询样本测试:")
-            print(f"  - 数据形状: {query_data.shape}")
-            print(f"  - 标签形状: {query_labels.shape}")
-            print(f"  - 标签和: {query_labels.sum().item()}")
-            print(f"  - 文件名: {metadata['filename']}")
-        
-        # 测试支持集
-        print("\n🎯 测试支持集数据加载器...")
-        support_dataset = SupportTrafficDataset(
-            support_root_dir=support_root_dir,
-            activated_classes=list(range(60)),  # 0-59
-            target_length=30000,
-            shots_per_class=1
-        )
-        
-        support_data, support_masks, class_order = support_dataset.get_all_support_data()
-        print(f"支持集测试:")
-        print(f"  - 支持集数据形状: {support_data.shape}")
-        print(f"  - 支持集掩码形状: {support_masks.shape}")
-        print(f"  - 类别顺序: {class_order[:10]}...（显示前10个）")
-        
-        # 测试兼容性
-        print(f"\n🔄 兼容性测试:")
-        print(f"  - 查询集长度: {query_data.shape[0]}")
-        print(f"  - 支持集长度: {support_data.shape[2]}")
-        print(f"  - 长度匹配: {'✅' if query_data.shape[0] == support_data.shape[2] else '❌'}")
-        
-        print(f"\n✅ 数据加载器测试完成！")
-        
-    except Exception as e:
-        print(f"\n❌ 测试过程中出现错误: {e}")
-        import traceback
-        traceback.print_exc()
-
-
-if __name__ == "__main__":
-    test_datasets() 

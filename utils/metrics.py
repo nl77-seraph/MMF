@@ -77,7 +77,8 @@ class MultiLabelMetrics:
         else:
             metrics['pk'] = MultiLabelMetrics.precision_at_k(targets, soft_probs, int(config['tabs']))
             metrics['mapk'] = MultiLabelMetrics.average_precision_at_k(targets, soft_probs, int(config['tabs']))
-
+        metrics['mAP'] = metrics['soft_mAP']
+        metrics['roc_auc'] = metrics['soft_roc_auc']
         
         return metrics
     
@@ -115,7 +116,7 @@ class MultiLabelMetrics:
     @staticmethod
     def print_metrics_summary(metrics):
         """打印指标摘要"""
-        print("📊 多标签分类指标摘要:")
+        print("多标签分类指标摘要:")
         print("Metrics: | soft_mAP | sig_mAP | soft_roc_auc | sig_roc_auc | pk | mapk |")
         print(f"Values:  | {metrics.get('soft_mAP', 0.0):.4f}   | {metrics.get('sig_mAP', 0.0):.4f}  | {metrics.get('soft_roc_auc', 0.0):.4f}       | {metrics.get('sig_roc_auc', 0.0):.4f}      | {metrics.get('pk', 0.0):.4f} | {metrics.get('mapk', 0.0):.4f} |")
 
@@ -156,55 +157,6 @@ class MultiLabelMetrics:
             sample_f1.append(f1)
         return np.array(sample_f1)
     
-    @staticmethod
-    def find_optimal_thresholds(logits, targets, metric='f1'):
-        """
-        为每个类别找到最优分类阈值
-        
-        Args:
-            logits: 模型输出logits
-            targets: 真实标签
-            metric: 优化指标 ('f1', 'precision', 'recall')
-            
-        Returns:
-            optimal_thresholds: 每个类别的最优阈值
-        """
-        if torch.is_tensor(logits):
-            logits = logits.detach().cpu().numpy()
-        if torch.is_tensor(targets):
-            targets = targets.detach().cpu().numpy()
-        
-        probs = 1 / (1 + np.exp(-logits))
-        num_classes = targets.shape[1]
-        optimal_thresholds = []
-        
-        for class_idx in range(num_classes):
-            class_targets = targets[:, class_idx]
-            class_probs = probs[:, class_idx]
-            
-            if np.sum(class_targets) == 0:  # 没有正样本
-                optimal_thresholds.append(0.5)
-                continue
-            
-            # 计算precision-recall曲线
-            precision, recall, thresholds = precision_recall_curve(class_targets, class_probs)
-            
-            if metric == 'f1':
-                f1_scores = 2 * precision * recall / (precision + recall + 1e-8)
-                best_idx = np.argmax(f1_scores)
-            elif metric == 'precision':
-                best_idx = np.argmax(precision)
-            elif metric == 'recall':
-                best_idx = np.argmax(recall)
-            else:
-                best_idx = len(thresholds) // 2  # 默认选择中位数
-            
-            if best_idx < len(thresholds):
-                optimal_thresholds.append(thresholds[best_idx])
-            else:
-                optimal_thresholds.append(0.5)
-        
-        return np.array(optimal_thresholds)
     
     @staticmethod
     def compute_novel_class_metrics(logits, targets, novel_classes, activated_classes=None, threshold=0.5, k='3'):
@@ -232,47 +184,88 @@ class MultiLabelMetrics:
             logits = logits.detach().cpu().numpy()
         if torch.is_tensor(targets):
             targets = targets.detach().cpu().numpy()
-        if k == 'mixed':
-            k = 3
-        else:
-            k = int(k)
+        
         # 计算概率
         probs = sigmoid(logits)
-        top_k_preds = np.argsort(probs, axis=1)[:, -k:]
         
-        # 统计Top-k中包含指定类别的精确率（novel/base）
-        def compute_topk_precision(class_pairs):
+        # 判断是否为dynamic k
+        is_dynamic_k = (k == 'mixed')
+        k_value = int(k) if not is_dynamic_k else None
+        
+        # 统计Top-k中包含指定类别的精确率、召回率、准确率（novel/base）
+        def compute_topk_metrics(class_pairs):
             """
             Args:
                 class_pairs: [(col_idx, class_id), ...]
             Returns:
-                class_precisions: {class_id: {'precision': float, 'pred_count': int, 'tp': int}}
-                avg_precision: float
+                class_metrics: {class_id: {'precision': float, 'recall': float, 'accuracy': float, ...}}
+                avg_metrics: {'precision': float, 'recall': float, 'accuracy': float}
             """
-            class_precisions = {}
+            class_metrics = {}
             total_tp = 0
             total_pred = 0
+            total_actual = 0
+            total_correct = 0
+            total_samples = targets.shape[0]
             
             for col_idx, class_id in class_pairs:
                 if col_idx >= logits.shape[1]:
                     continue
-                # 样本在Top-k中包含该类别即可视为该类别的预测
-                if k != 0:
+                
+                # 计算pred_mask：判断该类别是否在Top-k中
+                if is_dynamic_k:
+                    # Dynamic k: 每个样本根据真实标签数确定k
+                    pred_mask = np.zeros(total_samples, dtype=bool)
+                    for i in range(total_samples):
+                        sample_k = int(np.sum(targets[i]))
+                        if sample_k == 0:
+                            sample_k = 1  # 至少取top-1
+                        top_k_indices = np.argsort(probs[i])[-sample_k:]
+                        pred_mask[i] = col_idx in top_k_indices
+                else:
+                    # Fixed k: 使用预计算的top_k_preds
+                    top_k_preds = np.argsort(probs, axis=1)[:, -k_value:]
                     pred_mask = np.any(top_k_preds == col_idx, axis=1)
-                    pred_count = int(np.sum(pred_mask))
-                    tp = int(np.sum(pred_mask & (targets[:, col_idx] == 1)))
-                    precision = tp / pred_count if pred_count > 0 else 1
+                
+                pred_count = int(np.sum(pred_mask))
+                
+                # Recall: 该类为真的样本
+                actual_mask = targets[:, col_idx] == 1
+                actual_count = int(np.sum(actual_mask))
+                
+                # TP: 预测且为真
+                tp = int(np.sum(pred_mask & actual_mask))
+                
+                # Accuracy: 预测正确（TP + TN）/ 总样本数
+                tn = int(np.sum((~pred_mask) & (~actual_mask)))
+                accuracy = (tp + tn) / total_samples if total_samples > 0 else 0
+                
+                precision = tp / pred_count if pred_count > 0 else 1
+                recall = tp / actual_count if actual_count > 0 else 1
                     
-                    class_precisions[class_id] = {
+                class_metrics[class_id] = {
                         'precision': precision,
+                    'recall': recall,
+                    'accuracy': accuracy,
                         'pred_count': pred_count,
+                    'actual_count': actual_count,
                         'tp': tp
                     }
-                    total_tp += tp
-                    total_pred += pred_count
+                
+                total_tp += tp
+                total_pred += pred_count
+                total_actual += actual_count
+                total_correct += (tp + tn)
                 
             avg_precision = total_tp / total_pred if total_pred > 0 else 1
-            return class_precisions, avg_precision
+            avg_recall = total_tp / total_actual if total_actual > 0 else 1
+            avg_accuracy = total_correct / (total_samples * len(class_pairs)) if len(class_pairs) > 0 else 0
+            
+            return class_metrics, {
+                'precision': avg_precision,
+                'recall': avg_recall,
+                'accuracy': avg_accuracy
+            }
         
         # 确定novel classes在logits中的列索引
         if activated_classes is not None:
@@ -364,9 +357,14 @@ class MultiLabelMetrics:
         avg_recall = np.mean(recalls) if recalls else 0.0
         avg_f1 = np.mean(f1_scores) if f1_scores else 0.0
         
-        # Top-k 精确率统计
-        novel_topk_precisions, novel_topk_avg = compute_topk_precision(novel_class_pairs)
-        base_topk_precisions, base_topk_avg = compute_topk_precision(base_class_pairs)
+        # Top-k 指标统计（Precision, Recall, Accuracy）
+        novel_topk_metrics, novel_topk_avg = compute_topk_metrics(novel_class_pairs)
+        base_topk_metrics, base_topk_avg = compute_topk_metrics(base_class_pairs)
+        
+        # Set-based指标（基于threshold）：只关注novel类的全局统计
+        set_based_metrics = MultiLabelMetrics._compute_set_based_novel_metrics(
+            probs, targets, novel_class_pairs, threshold
+        )
         
         return {
             'class_metrics': class_metrics,
@@ -374,16 +372,78 @@ class MultiLabelMetrics:
             'avg_recall': avg_recall,
             'avg_f1': avg_f1,
             'topk_metrics': {
-                'k': k,
+                'k': 'dynamic' if is_dynamic_k else k_value,
                 'novel': {
-                    'class_precision': novel_topk_precisions,
-                    'avg_precision': novel_topk_avg
+                    'class_metrics': novel_topk_metrics,
+                    'avg_precision': novel_topk_avg['precision'],
+                    'avg_recall': novel_topk_avg['recall'],
+                    'avg_accuracy': novel_topk_avg['accuracy']
                 },
                 'base': {
-                    'class_precision': base_topk_precisions,
-                    'avg_precision': base_topk_avg
+                    'class_metrics': base_topk_metrics,
+                    'avg_precision': base_topk_avg['precision'],
+                    'avg_recall': base_topk_avg['recall'],
+                    'avg_accuracy': base_topk_avg['accuracy']
                 }
-            }
+            },
+            'set_based_metrics': set_based_metrics
+        }
+    
+    @staticmethod
+    def _compute_set_based_novel_metrics(probs, targets, novel_class_pairs, threshold):
+        """
+        计算Set-based指标：基于阈值将预测视为集合，统计novel类的整体表现
+        
+        Args:
+            probs: sigmoid概率，shape=(batch, num_classes)
+            targets: 真实标签，shape=(batch, num_classes)
+            novel_class_pairs: [(col_idx, class_id), ...]
+            threshold: 分类阈值
+            
+        Returns:
+            dict: {'accuracy': float, 'precision': float, 'recall': float}
+        """
+        if len(novel_class_pairs) == 0:
+            return {'accuracy': 0.0, 'precision': 0.0, 'recall': 0.0}
+        
+        # 基于阈值的预测
+        predictions = (probs >= threshold).astype(int)
+        
+        # 收集所有novel类的预测和真实标签
+        all_novel_preds = []
+        all_novel_targets = []
+        
+        for col_idx, _ in novel_class_pairs:
+            if col_idx < probs.shape[1]:
+                all_novel_preds.append(predictions[:, col_idx])
+                all_novel_targets.append(targets[:, col_idx])
+        
+        if len(all_novel_preds) == 0:
+            return {'accuracy': 0.0, 'precision': 0.0, 'recall': 0.0}
+        
+        # 展平为一维数组（视为所有novel预测的集合）
+        all_novel_preds = np.concatenate(all_novel_preds)
+        all_novel_targets = np.concatenate(all_novel_targets)
+        
+        # 计算TP, FP, FN, TN
+        tp = np.sum((all_novel_preds == 1) & (all_novel_targets == 1))
+        fp = np.sum((all_novel_preds == 1) & (all_novel_targets == 0))
+        fn = np.sum((all_novel_preds == 0) & (all_novel_targets == 1))
+        tn = np.sum((all_novel_preds == 0) & (all_novel_targets == 0))
+        
+        # 计算指标
+        accuracy = (tp + tn) / (tp + fp + fn + tn) if (tp + fp + fn + tn) > 0 else 0.0
+        precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+        recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+        
+        return {
+            'accuracy': accuracy,
+            'precision': precision,
+            'recall': recall,
+            'tp': int(tp),
+            'fp': int(fp),
+            'fn': int(fn),
+            'tn': int(tn)
         }
     
     @staticmethod
@@ -396,15 +456,13 @@ class MultiLabelMetrics:
             novel_classes: novel类别ID列表
         """
         print("\n" + "="*80)
-        # print("🎯 Novel Classes 详细指标 (每个类别的精确率/召回率)")
-        # print("="*80)
         
         class_metrics = novel_metrics.get('class_metrics', {})
         topk_metrics = novel_metrics.get('topk_metrics', {})
         #k = topk_metrics.get('k')
         
         if not class_metrics:
-            print("⚠️ 没有找到novel classes的指标")
+            print(" 没有找到novel classes的指标")
             return
         
         # # 打印表头
@@ -431,28 +489,27 @@ class MultiLabelMetrics:
               f"{novel_metrics['avg_f1']:<12.4f}")
         print("="*80)
         
-        # 打印Top-k精确率（novel/base）
+        # 打印Top-k指标（Precision, Recall, Accuracy）
         def _print_topk_table(title, topk_info):
-            class_precisions = topk_info.get('class_precision', {})
             avg_precision = topk_info.get('avg_precision', 0.0)
-            if not class_precisions:
-                print(f"{title}: 无Top-k统计")
-                return
+            avg_recall = topk_info.get('avg_recall', 0.0)
+            avg_accuracy = topk_info.get('avg_accuracy', 0.0)
             
-            # print(f"\n{title} Top-k 精确率{f' (k={k})' if k is not None else ''} (Top-k含该类视为预测)")
-            # print(f"{'Class ID':<10} {'TopK_Prec':<12} {'Pred#':<8} {'TP':<6}")
-            # print("-" * 80)
-            # for class_id in sorted(class_precisions.keys()):
-            #     metrics = class_precisions[class_id]
-            #     print(f"{class_id:<10} "
-            #           f"{metrics['precision']:<12.4f} "
-            #           f"{metrics['pred_count']:<8} "
-            #           f"{metrics['tp']:<6}")
-            # print("-" * 80)
-            print(f"{'Avg':<10} {avg_precision:<12.4f}")
+            print(f"{title:<10} P@k: {avg_precision:<8.4f} R@k: {avg_recall:<8.4f} Acc@k: {avg_accuracy:<8.4f}")
         
         _print_topk_table("Novel", topk_metrics.get('novel', {}))
         _print_topk_table("Base", topk_metrics.get('base', {}))
+        
+        # 打印Set-based指标（基于threshold）
+        set_metrics = novel_metrics.get('set_based_metrics', {})
+        if set_metrics:
+            print("-" * 80)
+            print(f"Novel Set-based (threshold=0.5):")
+            print(f"  Accuracy: {set_metrics.get('accuracy', 0.0):.4f}  "
+                  f"Precision: {set_metrics.get('precision', 0.0):.4f}  "
+                  f"Recall: {set_metrics.get('recall', 0.0):.4f}")
+            print(f"  TP: {set_metrics.get('tp', 0)}  FP: {set_metrics.get('fp', 0)}  "
+                  f"FN: {set_metrics.get('fn', 0)}  TN: {set_metrics.get('tn', 0)}")
     
    
         

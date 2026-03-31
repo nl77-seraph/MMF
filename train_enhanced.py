@@ -27,11 +27,12 @@ warnings.filterwarnings('ignore')
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from data.meta_traffic_dataloader import MetaTrafficDataLoader
 from models.feature_extractors import EnhancedMultiMetaFingerNet  # 使用增强版
-from utils.metrics import MultiLabelMetrics#, MetricRecorder
+from utils.metrics import MultiLabelMetrics
 from utils.loss_functions import WeightedBCELoss, FocalLoss, AsymmetricLoss
 from utils.model_manager import ModelManager
 from utils.misc import *
-os.environ['CUDA_VISIBLE_DEVICES'] = '2,4'
+# GPU配置：根据实际机器修改，或通过环境变量 CUDA_VISIBLE_DEVICES 在命令行指定
+# os.environ['CUDA_VISIBLE_DEVICES'] = '0,1,2,3'
 class EnhancedTrainer:
     """
     增强版训练器
@@ -69,16 +70,16 @@ class EnhancedTrainer:
         self.model_manager = None
         
         if is_main_process():
-            print(f"🚀 EnhancedTrainer初始化 (混合方案C)")
-            print(f"  - 模式: {'分布式训练' if self.is_distributed else '单GPU训练'}")
+            print(f" EnhancedTrainer (C)")
+            print(f"   - {'' if self.is_distributed else 'GPU'}")
             if self.is_distributed:
                 print(f"  - Rank: {self.rank}/{self.world_size}")
-            print(f"  - 设备: {self.device}")
+            print(f"   - {self.device}")
     
     def setup_data_loaders(self):
         """设置数据加载器（支持分布式采样）"""
         if is_main_process():
-            print("\n📦 设置数据加载器...")
+            print("\n ...")
         
         # 训练数据加载器（随机采样模式）
         train_loader_base = MetaTrafficDataLoader(
@@ -136,15 +137,15 @@ class EnhancedTrainer:
         )
         
         if is_main_process():
-            print(f"  ✅ 训练集: {len(self.train_loader)} batches")
-            print(f"  ✅ 验证集: {len(self.val_loader)} batches")
+            print(f"   : {len(self.train_loader)} batches")
+            print(f"   : {len(self.val_loader)} batches")
             if self.is_distributed:
-                print(f"  ✅ 分布式采样器: 已启用")
+                print(f"   :")
     
     def setup_model(self):
         """设置增强版模型"""
         if is_main_process():
-            print("\n🧠 设置增强版网络模型...")
+            print("\n ...")
         
         # 使用EnhancedMultiMetaFingerNet
         self.model = EnhancedMultiMetaFingerNet(
@@ -163,7 +164,7 @@ class EnhancedTrainer:
                 find_unused_parameters=True
             )
             if is_main_process():
-                print(f"  ✅ DDP模型包装完成")
+                print(f"DDP")
         
         # 计算参数量
         if is_main_process():
@@ -171,12 +172,12 @@ class EnhancedTrainer:
             total_params = sum(p.numel() for p in model_for_count.parameters())
             trainable_params = sum(p.numel() for p in model_for_count.parameters() if p.requires_grad)
             
-            print(f"  ✅ 模型参数: {total_params:,} 总量, {trainable_params:,} 可训练")
+            print(f"   : {total_params:,} , {trainable_params:,}")
     
     def setup_loss_function(self):
         """设置损失函数"""
         if is_main_process():
-            print("\n⚖️ 设置损失函数...")
+            print("\n ...")
         
         positive_ratio = self.config['positive_ratio']
         pos_weight = torch.tensor([positive_ratio] * self.config['num_classes']).to(self.device)
@@ -198,12 +199,12 @@ class EnhancedTrainer:
             self.criterion = nn.BCEWithLogitsLoss()
         
         if is_main_process():
-            print(f"  ✅ 损失函数: {loss_type}")
+            print(f"   : {loss_type}")
     
     def setup_optimizer(self):
         """设置优化器"""
         if is_main_process():
-            print("\n🎯 设置优化器...")
+            print("\n ...")
         
         model_params = self.model.module.parameters() if self.is_distributed else self.model.parameters()
         
@@ -235,15 +236,15 @@ class EnhancedTrainer:
             )
         
         if is_main_process():
-            print(f"  ✅ 优化器: {self.config['optimizer']}")
-            print(f"  ✅ 学习率: {self.config['learning_rate']}")
+            print(f"   : {self.config['optimizer']}")
+            print(f"   : {self.config['learning_rate']}")
     
     def setup_logging(self):
         """设置日志（仅主进程）"""
         if not is_main_process():
             return
             
-        print("\n📊 设置日志系统...")
+        print("\n ...")
         
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         mode_suffix = "_ddp" if self.is_distributed else "_single"
@@ -256,8 +257,8 @@ class EnhancedTrainer:
         
         checkpoint_dir = os.path.join(self.exp_dir, 'checkpoints')
         self.model_manager = ModelManager(checkpoint_dir)
-        #self.metric_recorder = MetricRecorder(self.exp_dir)
-        print(f"  ✅ 实验目录: {self.exp_dir}")
+        
+        print(f"   : {self.exp_dir}")
     
     def train_epoch(self, epoch):
         """训练一个epoch"""
@@ -359,9 +360,9 @@ class EnhancedTrainer:
     def train(self):
         """完整训练流程"""
         if is_main_process():
-            print("\n🚀 开始增强版Base Class训练...")
-            print(f"  - 训练轮数: {self.config['num_epochs']}")
-            print(f"  - 目标: 从0.9+ mAP提升到0.95+ mAP")
+            print("\nBase Class...")
+            print(f"   - {self.config['num_epochs']}")
+            print(f"  - : 0.9+ mAP0.95+ mAP")
         
         for epoch in range(self.config['num_epochs']):
             self.current_epoch = epoch
@@ -375,15 +376,15 @@ class EnhancedTrainer:
             
             if is_main_process():
                 print(f"\nEpoch {epoch+1}/{self.config['num_epochs']}:")
-                print(f"  📈 Train - Loss:{train_loss:.4f}")
+                print(f"Train - Loss:{train_loss:.4f}")
                 #MultiLabelMetrics.print_metrics_summary(train_metrics)
-                print(f"  📊 Val   - Loss:{val_loss:.4f}")
+                print(f"Val   - Loss:{val_loss:.4f}")
                 MultiLabelMetrics.print_metrics_summary(val_metrics)
-                #self.metric_recorder.update(epoch, val_metrics)
+                
                 is_best = val_metrics['sig_mAP'] > self.best_map
                 if is_best:
                     self.best_map = val_metrics['sig_mAP']
-                    print(f"  🎉 新最佳 sig_mAP: {self.best_map:.4f}")
+                    print(f"    sig_mAP: {self.best_map:.4f}")
                 
                 model_to_save = self.model.module if self.is_distributed else self.model
                 self.model_manager.save_checkpoint(
@@ -402,8 +403,7 @@ class EnhancedTrainer:
                 self.scheduler.step()
         
         if is_main_process():
-            print(f"\n✅ 训练完成！最佳mAP: {self.best_map:.4f}")
-            #self.metric_recorder.save_metrics()
+            print(f"\n mAP: {self.best_map:.4f}")
             if self.writer:
                 self.writer.close()
 
@@ -422,7 +422,7 @@ def run_distributed_training(rank, world_size, config):
         trainer.train()
         
     except Exception as e:
-        print(f"❌ Rank {rank} 训练失败: {e}")
+        print(f" Rank {rank} : {e}")
         raise e
     finally:
         cleanup_distributed_training()
@@ -443,9 +443,9 @@ def main():
                 nprocs=world_size,
                 join=True
             )
-            print("🎉 分布式训练完成！")
+            print("")
         except Exception as e:
-            print(f"❌ 训练失败: {e}")
+            print(f" : {e}")
     else:
         try:
             if torch.cuda.is_available() and config['gpus']:
@@ -457,9 +457,9 @@ def main():
             trainer.setup_optimizer()
             trainer.setup_logging()
             trainer.train()
-            print("🎉 训练完成！")
+            print("")
         except Exception as e:
-            print(f"❌ 训练失败: {e}")
+            print(f" : {e}")
 
 
 if __name__ == '__main__':

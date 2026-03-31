@@ -33,7 +33,8 @@ from utils.loss_functions import WeightedBCELoss, FocalLoss, AsymmetricLoss
 from utils.model_manager import ModelManager
 from utils.misc import setup_distributed_training, cleanup_distributed_training, is_main_process, setup_seed
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '0,3'
+# GPU配置：根据实际机器修改，或通过环境变量 CUDA_VISIBLE_DEVICES 在命令行指定
+# os.environ['CUDA_VISIBLE_DEVICES'] = '0,1,2,3'
 class RepeatDataset(Dataset):
     """
     重复数据集包装器
@@ -100,8 +101,8 @@ class FewshotDataLoader:
         self.batch_size = batch_size
         
         if is_main_process():
-            print(f"\nFewshotDataLoader初始化:")
-            print(f"  - 类别数: {len(activated_classes)}")
+            print(f"\nFewshotDataLoader:")
+            print(f"   - {len(activated_classes)}")
             print(f"  - shots_per_class: {shots_per_class}")
             print(f"  - repeat: {repeat}")
             print(f"  - batch_size: {batch_size}")
@@ -143,10 +144,10 @@ class FewshotDataLoader:
             self.support_dataset.get_all_support_data()
         
         if is_main_process():
-            print(f"  - Query样本数(原始): {len(self.query_dataset)}")
-            print(f"  - Query样本数(重复后): {len(self.query_dataset_repeated)}")
-            print(f"  - Support形状: {self.support_data.shape}")
-            print(f"  - 总批次数: {len(self.query_loader)}")
+            print(f"  - Query(): {len(self.query_dataset)}")
+            print(f"  - Query(): {len(self.query_dataset_repeated)}")
+            print(f"  - Support: {self.support_data.shape}")
+            print(f"   - {len(self.query_loader)}")
 
     def _query_collate_fn(self, batch):
         """Query集collate函数"""
@@ -243,16 +244,16 @@ class FewshotTrainer:
         self.model_manager = None
         
         if is_main_process():
-            print(f"\n🚀 FewshotTrainer初始化")
-            print(f"  - 微调模式: {config.get('finetune_mode', 'full')}")
+            print(f"FewshotTrainer init")
+            print(f"   - {config.get('finetune_mode', 'full')}")
             print(f"  - K-shot: {config.get('k_shot', 5)}")
             print(f"  - Repeat: {config.get('repeat', 1)}")
-            print(f"  - 设备: {self.device}")
+            print(f"   - {self.device}")
     
     def setup_data_loaders(self):
         """设置Few-shot数据加载器"""
         if is_main_process():
-            print("\n📦 设置Few-shot数据加载器...")
+            print("\nFew-shot...")
         
         # 获取所有类别 (base + novel)
         base_classes = self.config.get('base_classes', list(range(60)))
@@ -260,9 +261,9 @@ class FewshotTrainer:
         all_classes = sorted(base_classes + novel_classes)
         
         if is_main_process():
-            print(f"  - Base classes: {len(base_classes)}个")
-            print(f"  - Novel classes: {len(novel_classes)}个 {novel_classes}")
-            print(f"  - 总类别数: {len(all_classes)}")
+            print(f"  - Base classes: {len(base_classes)}")
+            print(f"  - Novel classes: {len(novel_classes)} {novel_classes}")
+            print(f"   - {len(all_classes)}")
         
         # 训练数据加载器
         self.train_loader = FewshotDataLoader(
@@ -296,14 +297,14 @@ class FewshotTrainer:
             )
         
         if is_main_process():
-            print(f"  ✅ 训练集批次数: {len(self.train_loader)}")
+            print(f"   : {len(self.train_loader)}")
             if self.val_loader:
-                print(f"  ✅ 验证集批次数: {len(self.val_loader)}")
+                print(f"   : {len(self.val_loader)}")
     
     def setup_model(self):
         """设置模型并加载checkpoint"""
         if is_main_process():
-            print("\n🧠 设置模型...")
+            print("\n ...")
         
         # 获取类别数
         base_classes = self.config.get('base_classes', list(range(60)))
@@ -323,7 +324,7 @@ class FewshotTrainer:
         checkpoint_path = self.config.get('checkpoint_path')
         if checkpoint_path and os.path.exists(checkpoint_path):
             if is_main_process():
-                print(f"  📂 加载checkpoint: {checkpoint_path}")
+                print(f"   checkpoint: {checkpoint_path}")
             
             checkpoint = torch.load(checkpoint_path, map_location=self.device,weights_only=False)
             
@@ -355,7 +356,7 @@ class FewshotTrainer:
                 if new_state_dict[key].shape != model_state[key].shape:
                     mismatched_keys.append(key)
                     if is_main_process():
-                        print(f"  ⚠️ 维度不匹配: {key}")
+                        print(f"   : {key}")
                         print(f"      checkpoint: {new_state_dict[key].shape}")
                         print(f"      model: {model_state[key].shape}")
             
@@ -369,13 +370,13 @@ class FewshotTrainer:
             self.model.load_state_dict(filtered_state_dict, strict=False)
             
             if is_main_process():
-                print(f"  ✅ Checkpoint加载完成")
-                print(f"     加载了 {len(filtered_state_dict)}/{len(new_state_dict)} 层")
+                print(f"Checkpoint")
+                print(f"      {len(filtered_state_dict)}/{len(new_state_dict)}")
                 if mismatched_keys:
-                    print(f"     跳过了 {len(mismatched_keys)} 层（维度不匹配）")
+                    print(f"      {len(mismatched_keys)}")
         else:
             if is_main_process():
-                print(f"  ⚠️ 未找到checkpoint，使用随机初始化")
+                print(f"   checkpoint")
         
         # 应用冻结策略
         self._apply_freeze_strategy()
@@ -389,7 +390,7 @@ class FewshotTrainer:
                 find_unused_parameters=True  # 冻结时可能有未使用参数
             )
             if is_main_process():
-                print(f"  ✅ DDP包装完成")
+                print(f"DDP")
     
     def _apply_freeze_strategy(self):
         """
@@ -427,8 +428,8 @@ class FewshotTrainer:
         if is_main_process():
             trainable_params = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
             total_params = sum(p.numel() for p in self.model.parameters())
-            print(f"\n🔧 冻结策略: {finetune_mode}")
-            print(f"   可训练参数: {trainable_params:,} / {total_params:,} ({100*trainable_params/total_params:.1f}%)")
+            print(f"\n : {finetune_mode}")
+            print(f"   : {trainable_params:,} / {total_params:,} ({100*trainable_params/total_params:.1f}%)")
             
             # 显示各模块状态
             module_status = {}
@@ -441,18 +442,18 @@ class FewshotTrainer:
                 else:
                     module_status[module]['frozen'] += param.numel()
             
-            print("   模块状态:")
+            print("   :")
             for module, status in module_status.items():
                 total = status['trainable'] + status['frozen']
                 if status['trainable'] > 0:
-                    print(f"     {module}: ✅ 可训练 ({status['trainable']:,})")
+                    print(f"     {module}:   ({status['trainable']:,})")
                 else:
-                    print(f"     {module}: ❄️ 冻结 ({status['frozen']:,})")
+                    print(f"     {module}:   ({status['frozen']:,})")
     
     def setup_loss_function(self):
         """设置损失函数"""
         if is_main_process():
-            print("\n⚖️ 设置损失函数...")
+            print("\n ...")
         
         num_classes = len(self.config.get('base_classes', [])) + len(self.config.get('novel_classes', []))
         positive_ratio = self.config.get('positive_ratio', 10.0)
@@ -478,7 +479,7 @@ class FewshotTrainer:
             self.criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
         
         if is_main_process():
-            print(f"  ✅ 损失函数: {loss_type}")
+            print(f"   : {loss_type}")
     
     def setup_optimizer(self):
         """
@@ -489,7 +490,7 @@ class FewshotTrainer:
         - learning_rate /= factor
         """
         if is_main_process():
-            print("\n🎯 设置优化器...")
+            print("\n ...")
         
         # 获取可训练参数
         trainable_params = filter(lambda p: p.requires_grad, self.model.parameters())
@@ -540,7 +541,7 @@ class FewshotTrainer:
         # 参考Fewshot_Detection: max_epochs = ceil(max_epoch / repeat)
         max_epoch = self.config.get('max_epoch', 2000)
         repeat = self.config.get('repeat', 1)
-        effective_epochs = int(np.ceil(max_epoch / 20))
+        effective_epochs = int(np.ceil(max_epoch / 50))
         
         if is_main_process():
             print(f"  - max_epoch: {max_epoch}, repeat: {repeat}")
@@ -562,8 +563,8 @@ class FewshotTrainer:
             )
         
         if is_main_process():
-            print(f"  ✅ 优化器: {optimizer_type}")
-            print(f"  ✅ 调度器: {scheduler_type}")
+            print(f"   : {optimizer_type}")
+            print(f"   : {scheduler_type}")
         
         # 保存effective_epochs供训练使用
         self.effective_epochs = effective_epochs
@@ -573,7 +574,7 @@ class FewshotTrainer:
         if not is_main_process():
             return
         
-        print("\n📊 设置日志...")
+        print("\n ...")
         
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         k_shot = self.config.get('k_shot', 5)
@@ -594,7 +595,7 @@ class FewshotTrainer:
         checkpoint_dir = os.path.join(self.exp_dir, 'checkpoints')
         self.model_manager = ModelManager(checkpoint_dir)
         
-        print(f"  ✅ 实验目录: {self.exp_dir}")
+        print(f"   : {self.exp_dir}")
     
     def train_epoch(self, epoch):
         """训练一个epoch"""
@@ -760,7 +761,7 @@ class FewshotTrainer:
             novel_classes: novel类别列表
         """
         print("\n" + "="*80)
-        print("📋 前5个Batch的预测结果详情")
+        print(" 5Batch")
         print("="*80)
         
         for batch_idx, (batch_logits, batch_labels, batch_metadata) in enumerate(
@@ -776,7 +777,7 @@ class FewshotTrainer:
             batch_size = logits_np.shape[0]
             
             for sample_idx in range(min(3, batch_size)):  # 每个batch最多显示3个样本
-                print(f"\n  样本 {sample_idx + 1}:")
+                print(f"\n   {sample_idx + 1}:")
                 
                 # 获取真实标签
                 true_label_indices = np.where(labels_np[sample_idx] > 0.5)[0]
@@ -794,10 +795,10 @@ class FewshotTrainer:
                 pred_base = [l for l in pred_labels if l not in novel_classes]
                 pred_novel = [l for l in pred_labels if l in novel_classes]
                 
-                print(f"    真实标签 (Base): {true_base}")
-                print(f"    真实标签 (Novel): {true_novel}")
-                print(f"    预测标签 (Base): {pred_base}")
-                print(f"    预测标签 (Novel): {pred_novel}")
+                print(f"     (Base): {true_base}")
+                print(f"     (Novel): {true_novel}")
+                print(f"     (Base): {pred_base}")
+                print(f"     (Novel): {pred_novel}")
                 
                 # 显示novel classes的预测概率
                 if novel_classes:
@@ -811,18 +812,18 @@ class FewshotTrainer:
                     
                     if novel_probs:
                         novel_probs_str = ", ".join([f"C{cls}:{prob:.3f}" for cls, prob in novel_probs])
-                        print(f"    Novel类概率: {novel_probs_str}")
+                        print(f"Novel: {novel_probs_str}")
                 
                 # 计算该样本的匹配情况
                 correct_base = len(set(true_base) & set(pred_base))
                 correct_novel = len(set(true_novel) & set(pred_novel))
-                print(f"    匹配: Base={correct_base}/{len(true_base)}, Novel={correct_novel}/{len(true_novel)}")
+                print(f"    : Base={correct_base}/{len(true_base)}, Novel={correct_novel}/{len(true_novel)}")
                 
                 # 显示文件名（如果有）
                 if sample_idx < len(batch_metadata):
                     metadata = batch_metadata[sample_idx]
                     if 'filename' in metadata:
-                        print(f"    文件: {metadata['filename']}")
+                        print(f"    : {metadata['filename']}")
         
         print("\n" + "="*80)
     
@@ -830,12 +831,23 @@ class FewshotTrainer:
         """完整训练流程"""
         if is_main_process():
             print("\n" + "="*60)
-            print("🚀 开始Few-shot微调训练")
+            print(" Few-shot")
             print("="*60)
             print(f"  - K-shot: {self.config.get('k_shot', 5)}")
             print(f"  - Repeat: {self.config.get('repeat', 1)}")
-            print(f"  - 微调模式: {self.config.get('finetune_mode', 'full')}")
+            print(f"   - {self.config.get('finetune_mode', 'full')}")
             print(f"  - Effective epochs: {self.effective_epochs}")
+
+        # 初始评估（未微调）
+        if is_main_process():
+            print("\n ...")
+        init_val_loss, init_val_metrics = self.validate_epoch(-1)
+        if is_main_process() and init_val_metrics:
+            print(f"Init Val Loss: {init_val_loss:.4f}")
+            MultiLabelMetrics.print_metrics_summary(init_val_metrics)
+            self.best_map = max(self.best_map, init_val_metrics.get('sig_mAP', 0.0))
+        if self.is_distributed:
+            dist.barrier()
         
         for epoch in range(self.effective_epochs):
             self.current_epoch = epoch
@@ -853,15 +865,15 @@ class FewshotTrainer:
             
             if is_main_process():
                 print(f"\nEpoch {epoch+1}/{self.effective_epochs} | Time: {epoch_time:.1f}s")
-                print(f"  📈 Train Loss: {train_loss:.4f}")
+                print(f"Train Loss: {train_loss:.4f}")
                 if val_metrics:
-                    print(f"  📊 Val Loss: {val_loss:.4f}")
+                    print(f"Val Loss: {val_loss:.4f}")
                     MultiLabelMetrics.print_metrics_summary(val_metrics)
                     
                     is_best = val_metrics.get('sig_mAP', 0) > self.best_map
                     if is_best:
                         self.best_map = val_metrics['sig_mAP']
-                        print(f"  🎉 新最佳 sig_mAP: {self.best_map:.4f}")
+                        print(f"    sig_mAP: {self.best_map:.4f}")
                     
                     model_to_save = self.model.module if self.is_distributed else self.model
                     t0 = time.time()
@@ -883,7 +895,7 @@ class FewshotTrainer:
                 self.scheduler.step()
         
         if is_main_process():
-            print(f"\n✅ Few-shot微调完成！最佳mAP: {self.best_map:.4f}")
+            print(f"\nFew-shotmAP: {self.best_map:.4f}")
             if self.writer:
                 self.writer.close()
 
@@ -902,7 +914,7 @@ def run_distributed_training(rank, world_size, config):
         trainer.train()
         
     except Exception as e:
-        print(f"❌ Rank {rank} 训练失败: {e}")
+        print(f" Rank {rank} : {e}")
         import traceback
         traceback.print_exc()
         raise e
@@ -917,7 +929,7 @@ def get_fewshot_config():
     args = parser.parse_args()
     
     if not os.path.exists(args.config):
-        print(f"❌ 配置文件不存在: {args.config}")
+        print(f" : {args.config}")
         return None
     
     with open(args.config, 'r') as f:
@@ -931,7 +943,7 @@ def get_fewshot_config():
     
     for field in required_fields:
         if field not in config:
-            print(f"❌ 配置缺少必要字段: {field}")
+            print(f" : {field}")
             return None
     
     # GPU验证
@@ -941,14 +953,14 @@ def get_fewshot_config():
         
         for gpu in gpus:
             if gpu >= available_gpus:
-                print(f"❌ GPU {gpu} 不存在")
+                print(f" GPU {gpu}")
                 return None
         
         config['use_distributed'] = len(gpus) > 1
-        print(f"✅ 使用GPU: {gpus}")
+        print(f" GPU: {gpus}")
     else:
         config['use_distributed'] = False
-        print("⚠️ CUDA不可用，使用CPU")
+        print(" CUDACPU")
     
     return config
 
@@ -969,9 +981,9 @@ def main():
                 nprocs=world_size,
                 join=True
             )
-            print("🎉 分布式训练完成！")
+            print("")
         except Exception as e:
-            print(f"❌ 训练失败: {e}")
+            print(f" : {e}")
     else:
         try:
             if torch.cuda.is_available() and config.get('gpus'):
@@ -984,9 +996,9 @@ def main():
             trainer.setup_optimizer()
             trainer.setup_logging()
             trainer.train()
-            print("🎉 训练完成！")
+            print("")
         except Exception as e:
-            print(f"❌ 训练失败: {e}")
+            print(f" : {e}")
             import traceback
             traceback.print_exc()
 

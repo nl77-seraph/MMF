@@ -1,8 +1,3 @@
-"""
-增强的多标签分类头 - 混合方案C
-核心改进: Cross-Class Attention建模类间关系
-保持: 独立二分类思想
-"""
 
 import torch
 import torch.nn as nn
@@ -12,10 +7,7 @@ from timm.models.layers import trunc_normal_, DropPath
 from utils.misc import is_main_process
 
 class CrossClassAttention(nn.Module):
-    """
-    跨类别注意力机制
-    让每个类别能够"看到"其他类别的信息，建模multi-tab场景下的类别共现模式
-    """
+
     
     def __init__(self, feature_dim: int, num_heads: int = 8, dropout: float = 0.1):
         super(CrossClassAttention, self).__init__()
@@ -106,15 +98,7 @@ class SimplifiedTopMAttention(nn.Module):
 
 
 class EnhancedClassificationHead(nn.Module):
-    """
-    增强的多标签分类头 (混合方案C)
-    
-    改进:
-    1. 简化TopM MHSA (减少层数)
-    2. 添加Cross-Class Attention (核心创新)
-    3. 增强的MLP分类器
-    4. 保持独立二分类结构
-    """
+
     
     def __init__(self, feature_dim: int = 256, num_classes: int = 3, seq_len: int = 119, 
                  num_topm_layers: int = 2, num_cross_layers: int = 2):
@@ -145,7 +129,6 @@ class EnhancedClassificationHead(nn.Module):
             nn.LayerNorm(embed_dim) for _ in range(num_topm_layers)
         ])
         
-
         self.cross_class_layers = nn.ModuleList([
             CrossClassAttention(embed_dim, num_heads, dropout)
             for _ in range(num_cross_layers)
@@ -207,7 +190,7 @@ class EnhancedClassificationHead(nn.Module):
             # 添加位置编码
             class_features = class_features + self.pos_embed
             
-            # 应用简化的TopM MHSA (仅1-2层)
+            # 应用简化的TopM MHSA 
             for i in range(self.num_topm_layers):
                 class_features = class_features + self.topm_layers[i](class_features)
                 class_features = self.topm_norms[i](class_features)
@@ -219,7 +202,6 @@ class EnhancedClassificationHead(nn.Module):
         # 拼接所有类别特征: (batch, num_classes, feature_dim)
         all_class_features = torch.stack(class_features_list, dim=1)
         
-        # 步骤3: Cross-Class Attention (建模类间关系)
         for cross_layer in self.cross_class_layers:
             all_class_features = cross_layer(all_class_features)
         # all_class_features: (batch, num_classes, feature_dim)
@@ -227,75 +209,6 @@ class EnhancedClassificationHead(nn.Module):
         class_features_flat = all_class_features.view(bs * nc, fd)
         logits_flat = self.classifier(class_features_flat)  # (batch*num_classes, 1)
         logits = logits_flat.view(batch_size, nc)
-        # # 步骤4: 独立二分类
-        # class_logits = []
-        # for class_idx in range(self.num_classes):
-        #     class_feature = all_class_features[:, class_idx, :]  # (batch, feature_dim)
-        #     class_logit = self.classifier(class_feature)  # (batch, 1)
-        #     class_logits.append(class_logit)
-        
-        # # 拼接: (batch, num_classes)
-        # logits = torch.cat(class_logits, dim=1)
         
         return logits
     
-
-def test_enhanced_classification_head():
-    """测试增强分类头"""
-    print("="*60)
-    print("测试增强的分类头")
-    print("="*60)
-    
-    # 设置参数
-    batch_size = 4
-    num_classes = 3
-    feature_dim = 256
-    seq_len = 119
-    
-    # 创建模拟数据 (重加权后的特征)
-    reweighted_features = torch.randn(batch_size * num_classes, feature_dim, seq_len)
-    
-    print(f"\n输入形状:")
-    print(f"  重加权特征: {reweighted_features.shape}")
-    
-    # 创建增强分类头
-    head = EnhancedClassificationHead(
-        feature_dim=feature_dim,
-        num_classes=num_classes,
-        seq_len=seq_len,
-        num_topm_layers=2,  # 简化版，仅2层
-        num_cross_layers=2   # Cross-Class层数
-    )
-    
-    # 前向传播
-    print(f"\n执行前向传播...")
-    with torch.no_grad():
-        logits = head(reweighted_features)
-        predictions, probabilities = head.predict(reweighted_features)
-    
-    print(f"\n输出形状:")
-    print(f"  Logits: {logits.shape}")
-    print(f"  Predictions: {predictions.shape}")
-    print(f"  Probabilities: {probabilities.shape}")
-    
-    # 验证
-    assert logits.shape == (batch_size, num_classes)
-    assert predictions.shape == (batch_size, num_classes)
-    assert probabilities.shape == (batch_size, num_classes)
-    
-    print(f"\n示例输出 (第一个样本):")
-    print(f"  Logits: {logits[0].numpy()}")
-    print(f"  Probabilities: {probabilities[0].numpy()}")
-    print(f"  Predictions: {predictions[0].numpy()}")
-    
-    print(f"\n✅ 增强分类头测试完成!")
-    print(f"\n改进点:")
-    print(f"  ✓ 简化TopM MHSA (减少到{head.num_topm_layers}层)")
-    print(f"  ✓ Cross-Class Attention ({head.num_cross_layers}层)")
-    print(f"  ✓ 增强MLP分类器 (3层)")
-    print(f"  ✓ 保持独立二分类结构")
-
-
-if __name__ == "__main__":
-    test_enhanced_classification_head()
-

@@ -109,7 +109,7 @@ def generate_mixed_tab_dataset(
     config = MIXED_TAB_CONFIG[scale]
     
     print("\n" + "="*60)
-    print(f"生成Mixed-Tab数据集 - {scale.upper()}规模")
+    print(f"Mixed-Tab - {scale.upper()}")
     print("="*60)
     
     # 计算总样本数
@@ -119,19 +119,19 @@ def generate_mixed_tab_dataset(
         samples = tab_config['num_combinations'] * tab_config['samples_per_combo']
         total_samples_train += samples
         total_samples_test += samples
-        print(f"{tab_key}: {tab_config['num_combinations']}组 × {tab_config['samples_per_combo']}样本 = {samples}样本")
+        print(f"{tab_key}: {tab_config['num_combinations']} × {tab_config['samples_per_combo']} = {samples}")
     
-    print(f"\n总样本数:")
-    print(f"  - 训练集: {total_samples_train}")
-    print(f"  - 测试集: {total_samples_test}")
-    print(f"  - 合计: {total_samples_train + total_samples_test}")
+    print(f"\n:")
+    print(f"   - {total_samples_train}")
+    print(f"   - {total_samples_test}")
+    print(f"   - {total_samples_train + total_samples_test}")
     
     results = {}
     
     # 对每个split分别生成
     for split in ['train', 'test']:
         print(f"\n{'='*60}")
-        print(f"生成Mixed-Tab {split}集")
+        print(f"Mixed-Tab {split}")
         print(f"{'='*60}")
         
         # 创建mixed_tab输出目录
@@ -153,15 +153,15 @@ def generate_mixed_tab_dataset(
         }
         
         # 生成每个tab数的数据
-        for num_tabs in [2, 3, 4, 5]:
+        for num_tabs in [3, 4, 5]:
             tab_key = f'{num_tabs}tab'
             if split == 'test':
                 tab_key = f'{num_tabs}tab_test'
             tab_config = config[tab_key]
             
-            print(f"\n生成{num_tabs}-tab部分:")
-            print(f"  - 组合数: {tab_config['num_combinations']}")
-            print(f"  - 每组样本数: {tab_config['samples_per_combo']}")
+            print(f"\n{num_tabs}-tab:")
+            print(f"   - {tab_config['num_combinations']}")
+            print(f"   - {tab_config['samples_per_combo']}")
             
             # 临时生成到各自的tab目录
             temp_output = generator.generate_dataset(
@@ -224,7 +224,7 @@ def generate_mixed_tab_dataset(
             if os.path.exists(temp_parent):
                 shutil.rmtree(temp_parent)
             
-            print(f"  [OK] {num_tabs}-tab: {len(tab_query_filenames)}个样本已添加到mixed_tab")
+            print(f"  [OK] {num_tabs}-tab: {len(tab_query_filenames)}mixed_tab")
         
         # 保存mixed_tab的query文件名列表
         query_json_path = os.path.join(mixed_output_dir, f"mixed_tab_{split}.json")
@@ -236,10 +236,10 @@ def generate_mixed_tab_dataset(
         with open(stats_json_path, 'w') as f:
             json.dump(mixed_statistics, f, indent=2)
         
-        print(f"\n[OK] Mixed-Tab {split}集生成完成")
-        print(f"  - 总样本数: {mixed_statistics['total_samples']}")
-        print(f"  - Query索引: {query_json_path}")
-        print(f"  - 统计信息: {stats_json_path}")
+        print(f"\n[OK] Mixed-Tab {split}")
+        print(f"   - {mixed_statistics['total_samples']}")
+        print(f"  - Query: {query_json_path}")
+        print(f"   - {stats_json_path}")
         
         results[split] = mixed_output_dir
     
@@ -277,7 +277,7 @@ def generate_datasets(
         source_root=source_root,
         output_root=output_root,
         num_classes=60,
-        overlap_range=(0.0, 0.2),
+        overlap_range=(0.0, 0.4),
         random_seed=random_seed
     )
     
@@ -293,9 +293,9 @@ def generate_datasets(
         )
         
         print("\n" + "="*60)
-        print("[OK] Mixed-Tab数据集生成完成!")
+        print("[OK] Mixed-Tab!")
         print("="*60)
-        print(f"\n生成的数据集:")
+        print(f"\n:")
         print(f"  - mixed_tab:")
         print(f"      train: {results['train']}")
         print(f"      test: {results['test']}")
@@ -316,11 +316,11 @@ def generate_datasets(
         raise ValueError(f"Unknown scale: {scale}")
     
     print("\n" + "="*60)
-    print(f"多标签数据集生成 - {scale.upper()}规模")
+    print(f" - {scale.upper()}")
     print("="*60)
-    print(f"生成tab数: {num_tabs_list}")
-    print(f"输出目录: {output_root}")
-    print(f"随机种子: {random_seed}")
+    print(f"tab: {num_tabs_list}")
+    print(f": {output_root}")
+    print(f": {random_seed}")
     
     # 生成各个tab数的数据集
     results = {}
@@ -330,7 +330,7 @@ def generate_datasets(
         test_dataset_key = f'{num_tabs}tab_test'
         
         if dataset_key not in config:
-            print(f"\n[SKIP] 配置中未找到{dataset_key}，跳过")
+            print(f"\n[SKIP] {dataset_key}")
             continue
         
         num_combinations = config[dataset_key]['num_combinations']
@@ -338,14 +338,14 @@ def generate_datasets(
         test_num_combinations = config[test_dataset_key]['num_combinations']
         test_samples_per_combo = config[test_dataset_key]['samples_per_combo']
         print(f"\n{'='*60}")
-        print(f"生成{num_tabs}-tab数据集")
+        print(f"{num_tabs}-tab")
         print(f"{'='*60}")
-        print(f"组合数: {num_combinations}")
-        print(f"每组样本数: {samples_per_combo}")
-        print(f"总样本数: {num_combinations * samples_per_combo}")
+        print(f": {num_combinations}")
+        print(f": {samples_per_combo}")
+        print(f": {num_combinations * samples_per_combo}")
         
         # 生成训练集
-        print(f"\n[1/2] 生成训练集...")
+        print(f"\n[1/2] ...")
         train_output = generator.generate_dataset(
             num_tabs=num_tabs,
             num_combinations=num_combinations,
@@ -358,7 +358,7 @@ def generate_datasets(
         )
         
         # 生成测试集
-        print(f"\n[2/2] 生成测试集...")
+        print(f"\n[2/2] ...")
         test_output = generator.generate_dataset(
             num_tabs=num_tabs,
             num_combinations=test_num_combinations,
@@ -377,9 +377,9 @@ def generate_datasets(
     
     # 总结
     print("\n" + "="*60)
-    print("[OK] 所有数据集生成完成!")
+    print("[OK] !")
     print("="*60)
-    print(f"\n生成的数据集:")
+    print(f"\n:")
     for key, paths in results.items():
         print(f"  - {key}:")
         print(f"      train: {paths['train']}")
@@ -403,7 +403,7 @@ def main():
     parser.add_argument(
         '--scale',
         type=str,
-        default='small',
+        default='medium',
         choices=['small', 'medium', 'large'],
         help='数据规模：small(测试), medium(中等), large(论文)'
     )
@@ -473,7 +473,7 @@ def main():
     # Mixed-tab模式
     if args.mixed_tabs:
         if args.num_combinations or args.samples_per_combo:
-            print("[WARNING] mixed_tabs模式下忽略--num-combinations和--samples-per-combo参数")
+            print("[WARNING] mixed_tabs--num-combinations--samples-per-combo")
         
         generate_datasets(
             num_tabs_list=[2, 3, 4, 5],  # mixed_tabs总是生成所有tab
@@ -518,35 +518,35 @@ if __name__ == "__main__":
     # 如果没有命令行参数，显示使用说明
     if len(sys.argv) == 1:
         print("\n" + "="*60)
-        print("多标签数据集生成脚本")
+        print("")
         print("="*60)
-        print("\n使用示例:")
-        print("\n【Fixed-Tab模式】")
-        print("1. 小规模测试（生成2-tab，10组×5样本）：")
+        print("\n:")
+        print("\nFixed-Tab")
+        print("1. 2-tab10×5")
         print("   python generate_multitab_datasets.py --tabs 2 --scale small")
-        print("\n2. 生成2-tab和3-tab（中等规模）：")
+        print("\n2. 2-tab3-tab")
         print("   python generate_multitab_datasets.py --tabs 2 3 --scale medium")
-        print("\n3. 生成所有tab数（大规模）：")
+        print("\n3. tab")
         print("   python generate_multitab_datasets.py --tabs 2 3 4 5 --scale large")
-        print("\n4. 自定义参数：")
+        print("\n4.")
         print("   python generate_multitab_datasets.py --tabs 2 --num-combinations 20 --samples-per-combo 10")
-        print("\n【Mixed-Tab模式】")
-        print("5. 生成mixed-tab数据集（小规模测试）：")
+        print("\nMixed-Tab")
+        print("5. mixed-tab")
         print("   python generate_multitab_datasets.py --mixed_tabs --scale small")
-        print("\n6. 生成mixed-tab数据集（大规模，约20万样本）：")
+        print("\n6. mixed-tab20")
         print("   python generate_multitab_datasets.py --mixed_tabs --scale large")
-        print("\n7. Mixed-tab with均衡参数：")
+        print("\n7. Mixed-tab with")
         print("   python generate_multitab_datasets.py --mixed_tabs --scale medium --check-interval 30 --balance-attempts 25")
-        print("\n【Open World模式】")
-        print("8. 生成带OW类别的数据集：")
+        print("\nOpen World")
+        print("8. OW")
         print("   python generate_multitab_datasets.py --tabs 2 3 --scale small --ow")
-        print("\n9. Mixed-tab + OW：")
+        print("\n9. Mixed-tab + OW")
         print("   python generate_multitab_datasets.py --mixed_tabs --scale medium --ow")
-        print("\n10. 查看所有选项：")
+        print("\n10.")
         print("   python generate_multitab_datasets.py --help")
         print("\n" + "="*60)
-        print("\n当前将使用默认参数运行小规模测试...")
-        print("生成: 2-tab, 10组×5样本\n")
+        print("\n...")
+        print(": 2-tab, 10×5\n")
         
         # 默认运行小规模测试
         # generate_datasets(

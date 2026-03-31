@@ -1,8 +1,4 @@
-"""
-Meta Traffic DataLoader
-整合查询集和支持集的数据加载器，与MultiMetaFingerNet完全兼容
-参考Few-shot Detection的训练模式
-"""
+
 
 import torch
 from torch.utils.data import DataLoader
@@ -155,7 +151,7 @@ class MetaTrafficIterator:
         self.dataloader = dataloader
         self.query_iter = iter(dataloader.query_loader)
         self.support_data, self.support_masks = dataloader.get_support_data()
-    
+        
     def __iter__(self):
         return self
     
@@ -172,7 +168,7 @@ class MetaTrafficIterator:
         try:
             # 获取查询集batch
             query_data, query_labels, metadata = next(self.query_iter)
-            
+            #self.support_data, self.support_masks = self.dataloader.get_support_data()
             # 组织batch信息
             batch_info = {
                 'query_labels': query_labels,  # (batch_size, num_classes)
@@ -202,17 +198,17 @@ def test_meta_dataloader():
     paths_to_check = [query_json_path, query_files_dir, support_root_dir]
     for path in paths_to_check:
         if os.path.exists(path):
-            print(f"✅ 路径存在: {path}")
+            print(f"路径存在: {path}")
         else:
-            print(f"❌ 路径不存在: {path}")
+            print(f"路径不存在: {path}")
     
     if not all(os.path.exists(p) for p in paths_to_check):
-        print("\n⚠️  数据路径不存在，跳过测试")
+        print("\n数据路径不存在，跳过测试")
         return
     
     try:
         # 创建数据加载器
-        print(f"\n🔄 创建MetaTrafficDataLoader...")
+        print(f"\n创建MetaTrafficDataLoader...")
         dataloader = MetaTrafficDataLoader(
             query_json_path=query_json_path,
             query_files_dir=query_files_dir,
@@ -225,7 +221,7 @@ def test_meta_dataloader():
             num_workers=0
         )
         
-        print(f"\n📊 测试数据格式兼容性...")
+        print(f"\n 测试数据格式兼容性...")
         # 测试几个batch
         for i, (query_data, support_data, support_masks, batch_info) in enumerate(dataloader):
             print(f"\nBatch {i+1}:")
@@ -248,11 +244,11 @@ def test_meta_dataloader():
             if i >= 1:
                 break
         
-        print(f"\n✅ MetaTrafficDataLoader测试完成！")
+        print(f"\nMetaTrafficDataLoader测试完成！")
         print(f"数据格式完全兼容MultiMetaFingerNet.forward()接口")
         
     except Exception as e:
-        print(f"\n❌ 测试出现错误: {e}")
+        print(f"\n 测试出现错误: {e}")
         import traceback
         traceback.print_exc()
 
