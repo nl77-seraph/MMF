@@ -33,21 +33,21 @@ from utils.loss_functions import WeightedBCELoss, FocalLoss, AsymmetricLoss
 from utils.model_manager import ModelManager
 from utils.misc import setup_distributed_training, cleanup_distributed_training, is_main_process, setup_seed
 
-# GPU配置：根据实际机器修改，或通过环境变量 CUDA_VISIBLE_DEVICES 在命令行指定
-# os.environ['CUDA_VISIBLE_DEVICES'] = '0,1,2,3'
+# GPU configuration: update for the local machine or set CUDA_VISIBLE_DEVICES from the command line.
+os.environ['CUDA_VISIBLE_DEVICES'] = '4,5,6,7'
 class RepeatDataset(Dataset):
     """
-    重复数据集包装器
-    参考 Fewshot_Detection: return loadlines(dataopt['meta']) * cfg.repeat
+    Repeated dataset wrapper.
+    Reference from Fewshot_Detection: return loadlines(dataopt['meta']) * cfg.repeat.
     
-    用于将K-shot的少量数据重复多次以增加训练迭代次数
+    Repeats a small K-shot dataset multiple times to increase training iterations.
     """
     
     def __init__(self, base_dataset: Dataset, repeat: int = 1):
         """
         Args:
-            base_dataset: 原始数据集
-            repeat: 重复次数
+            base_dataset: Original dataset.
+            repeat: Number of repetitions.
         """
         self.base_dataset = base_dataset
         self.repeat = repeat
@@ -57,15 +57,15 @@ class RepeatDataset(Dataset):
         return self.base_length * self.repeat
     
     def __getitem__(self, idx):
-        # 循环索引到原始数据集
+        # Map the index cyclically to the original dataset.
         real_idx = idx % self.base_length
         return self.base_dataset[real_idx]
 
 
 class FewshotDataLoader:
     """
-    Few-shot数据加载器
-    复用meta_traffic_dataset的组件，添加repeat支持
+    Few-shot data loader.
+    Reuses meta_traffic_dataset components and adds repeat support.
     """
     
     def __init__(
@@ -84,17 +84,17 @@ class FewshotDataLoader:
     ):
         """
         Args:
-            query_json_path: Query集索引JSON
-            query_files_dir: Query集数据目录
-            support_root_dir: Support集根目录
-            activated_classes: 激活的类别列表 (base + novel)
-            query_target_length: Query序列长度
-            support_target_length: Support序列长度
-            shots_per_class: 每类support样本数
-            batch_size: 批大小
-            repeat: 数据重复次数 (参考metatune.data的repeat参数)
-            shuffle: 是否打乱
-            num_workers: 工作进程数
+            query_json_path: Query set index JSON.
+            query_files_dir: Query set data directory.
+            support_root_dir: Support set root directory.
+            activated_classes: Active class list (base + novel).
+            query_target_length: Query sequence length.
+            support_target_length: Support sequence length.
+            shots_per_class: Number of support samples per class.
+            batch_size: Batch size.
+            repeat: Number of data repetitions, following the metatune.data repeat parameter.
+            shuffle: Whether to shuffle.
+            num_workers: Number of worker processes.
         """
         self.activated_classes = activated_classes
         self.repeat = repeat
@@ -107,20 +107,20 @@ class FewshotDataLoader:
             print(f"  - repeat: {repeat}")
             print(f"  - batch_size: {batch_size}")
         
-        # 创建Query数据集
+        # Create the query dataset.
         self.query_dataset = QueryTrafficDataset(
             json_index_path=query_json_path,
             query_files_dir=query_files_dir,
             target_length=query_target_length,
             activated_classes=activated_classes
         )
-        # 应用repeat包装
+        # Apply the repeat wrapper.
         if repeat > 1:
             self.query_dataset_repeated = RepeatDataset(self.query_dataset, repeat)
         else:
             self.query_dataset_repeated = self.query_dataset
         
-        # 创建Query DataLoader
+        # Create the query DataLoader.
         self.query_loader = DataLoader(
             self.query_dataset_repeated,
             batch_size=batch_size,
@@ -130,7 +130,7 @@ class FewshotDataLoader:
             pin_memory=True
         )
         
-        # 创建Support数据集 (固定采样模式)
+        # Create the support dataset in fixed sampling mode.
         self.support_dataset = SupportTrafficDataset(
             support_root_dir=support_root_dir,
             activated_classes=activated_classes,
@@ -139,7 +139,7 @@ class FewshotDataLoader:
             random_sampling=True  
         )
         
-        # 预加载support数据
+        # Preload support data.
         self.support_data, self.support_masks, self.class_order = \
             self.support_dataset.get_all_support_data()
         
@@ -150,7 +150,7 @@ class FewshotDataLoader:
             print(f"   - {len(self.query_loader)}")
 
     def _query_collate_fn(self, batch):
-        """Query集collate函数"""
+        """Collate function for the query set."""
         query_data_list = []
         query_labels_list = []
         metadata_list = []
@@ -166,11 +166,11 @@ class FewshotDataLoader:
         return batch_query_data, batch_query_labels, metadata_list
     
     def get_support_data(self):
-        """获取support数据"""
+        """Get support data."""
         return self.support_data, self.support_masks
     
     def __iter__(self):
-        """返回迭代器"""
+        """Return an iterator."""
         return FewshotIterator(self)
     
     def __len__(self):
@@ -178,7 +178,7 @@ class FewshotDataLoader:
 
 
 class FewshotIterator:
-    """Few-shot数据迭代器"""
+    """Few-shot data iterator."""
     
     def __init__(self, dataloader: FewshotDataLoader):
         self.dataloader = dataloader
@@ -204,12 +204,12 @@ class FewshotIterator:
 
 class FewshotTrainer:
     """
-    Few-shot微调训练器
+    Few-shot fine-tuning trainer.
     
-    参考Fewshot_Detection的metatune.data配置:
-    - neg=0: 学习率因子=1.5
-    - repeat: 数据重复
-    - dynamic=0: 固定support采样
+    Follows the metatune.data configuration from Fewshot_Detection:
+    - neg=0: learning-rate factor is 1.5.
+    - repeat: data repetition.
+    - dynamic=0: fixed support sampling.
     """
     
     def __init__(self, config, rank=None, world_size=None):
@@ -223,11 +223,11 @@ class FewshotTrainer:
         else:
             self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         
-        # 混合精度
+        # Mixed precision.
         self.use_amp = config.get('use_amp', True)
         self.scaler = GradScaler() if self.use_amp else None
         
-        # 训练组件
+        # Training components.
         self.model = None
         self.train_loader = None
         self.val_loader = None
@@ -235,11 +235,11 @@ class FewshotTrainer:
         self.optimizer = None
         self.scheduler = None
         
-        # 训练状态
+        # Training state.
         self.current_epoch = 0
         self.best_map = 0.0
         
-        # 日志
+        # Logging.
         self.writer = None
         self.model_manager = None
         
@@ -251,11 +251,11 @@ class FewshotTrainer:
             print(f"   - {self.device}")
     
     def setup_data_loaders(self):
-        """设置Few-shot数据加载器"""
+        """Set up few-shot data loaders."""
         if is_main_process():
             print("\nFew-shot...")
         
-        # 获取所有类别 (base + novel)
+        # Get all classes (base + novel).
         base_classes = self.config.get('base_classes', list(range(60)))
         novel_classes = self.config.get('novel_classes', [])
         all_classes = sorted(base_classes + novel_classes)
@@ -265,7 +265,7 @@ class FewshotTrainer:
             print(f"  - Novel classes: {len(novel_classes)} {novel_classes}")
             print(f"   - {len(all_classes)}")
         
-        # 训练数据加载器
+        # Training data loader.
         self.train_loader = FewshotDataLoader(
             query_json_path=self.config['train_query_json'],
             query_files_dir=self.config['train_query_dir'],
@@ -280,7 +280,7 @@ class FewshotTrainer:
             num_workers=self.config['num_workers']
         )
         
-        # 验证数据加载器 (不使用repeat)
+        # Validation data loader without repeat.
         if self.config.get('val_query_json'):
             self.val_loader = FewshotDataLoader(
                 query_json_path=self.config['val_query_json'],
@@ -291,7 +291,7 @@ class FewshotTrainer:
                 support_target_length=self.config['support_target_length'],
                 shots_per_class=self.config['k_shot'],
                 batch_size=self.config['val_batch_size'],
-                repeat=1,  # 验证不重复
+                repeat=1,  # Do not repeat validation data.
                 shuffle=False,
                 num_workers=self.config['num_workers']
             )
@@ -302,16 +302,16 @@ class FewshotTrainer:
                 print(f"   : {len(self.val_loader)}")
     
     def setup_model(self):
-        """设置模型并加载checkpoint"""
+        """Set up the model and load the checkpoint."""
         if is_main_process():
             print("\n ...")
         
-        # 获取类别数
+        # Get the number of classes.
         base_classes = self.config.get('base_classes', list(range(60)))
         novel_classes = self.config.get('novel_classes', [])
         num_classes = len(base_classes) + len(novel_classes)
         
-        # 创建模型
+        # Create the model.
 
         self.model = EnhancedMultiMetaFingerNet(
             num_classes=num_classes,
@@ -320,7 +320,7 @@ class FewshotTrainer:
             use_se_in_df=self.config.get('use_se_in_df', False)
         ).to(self.device)
         
-        # 加载checkpoint
+        # Load checkpoint.
         checkpoint_path = self.config.get('checkpoint_path')
         if checkpoint_path and os.path.exists(checkpoint_path):
             if is_main_process():
@@ -328,7 +328,7 @@ class FewshotTrainer:
             
             checkpoint = torch.load(checkpoint_path, map_location=self.device,weights_only=False)
             
-            # 处理state_dict
+            # Process state_dict.
             if 'model_state_dict' in checkpoint:
                 state_dict = checkpoint['model_state_dict']
             elif 'state_dict' in checkpoint:
@@ -336,7 +336,7 @@ class FewshotTrainer:
             else:
                 state_dict = checkpoint
             
-            # 移除module.前缀（如果有）
+            # Remove the module. prefix if present.
             new_state_dict = {}
             for k, v in state_dict.items():
                 if k.startswith('module.'):
@@ -344,13 +344,13 @@ class FewshotTrainer:
                 else:
                     new_state_dict[k] = v
             
-            # 处理类别数不匹配的情况
-            # 如果novel classes增加了类别数，需要调整分类头
+            # Handle class-count mismatches.
+            # If novel classes increase the class count, the classification head must be adjusted.
             model_state = self.model.state_dict()
             loaded_keys = set(new_state_dict.keys())
             model_keys = set(model_state.keys())
             
-            # 找出维度不匹配的层
+            # Find layers with mismatched shapes.
             mismatched_keys = []
             for key in loaded_keys & model_keys:
                 if new_state_dict[key].shape != model_state[key].shape:
@@ -360,13 +360,13 @@ class FewshotTrainer:
                         print(f"      checkpoint: {new_state_dict[key].shape}")
                         print(f"      model: {model_state[key].shape}")
             
-            # 过滤掉不匹配的键
+            # Filter out mismatched keys.
             filtered_state_dict = {
                 k: v for k, v in new_state_dict.items() 
                 if k not in mismatched_keys
             }
             
-            # 加载权重
+            # Load weights.
             self.model.load_state_dict(filtered_state_dict, strict=False)
             
             if is_main_process():
@@ -378,33 +378,33 @@ class FewshotTrainer:
             if is_main_process():
                 print(f"   checkpoint")
         
-        # 应用冻结策略
+        # Apply the freezing strategy.
         self._apply_freeze_strategy()
         
-        # DDP包装
+        # Wrap with DDP.
         if self.is_distributed:
             self.model = DDP(
                 self.model,
                 device_ids=[self.rank],
                 output_device=self.rank,
-                find_unused_parameters=True  # 冻结时可能有未使用参数
+                find_unused_parameters=True  # Some parameters may be unused when frozen.
             )
             if is_main_process():
                 print(f"DDP")
     
     def _apply_freeze_strategy(self):
         """
-        应用冻结策略
+        Apply the freezing strategy.
         
         finetune_mode:
-        - head_only: 仅训练classification_head
-        - head_meta: 训练classification_head + meta_learnet
-        - full: 全模型训练
+        - head_only: train only classification_head.
+        - head_meta: train classification_head and meta_learnet.
+        - full: train the full model.
         """
         finetune_mode = self.config.get('finetune_mode', 'full')
         
         if finetune_mode == 'head_only':
-            # 冻结除classification_head外的所有层
+            # Freeze all layers except classification_head.
             for name, param in self.model.named_parameters():
                 if 'classification_head' in name:
                     param.requires_grad = True
@@ -412,7 +412,7 @@ class FewshotTrainer:
                     param.requires_grad = False
                     
         elif finetune_mode == 'head_meta':
-            # 冻结feature_extractor和feature_reweighting
+            # Freeze feature_extractor and feature_reweighting.
             for name, param in self.model.named_parameters():
                 if 'classification_head' in name or 'meta_learnet' in name:
                     param.requires_grad = True
@@ -420,18 +420,18 @@ class FewshotTrainer:
                     param.requires_grad = False
                     
         else:  # full
-            # 全部可训练
+            # Make all parameters trainable.
             for param in self.model.parameters():
                 param.requires_grad = True
         
-        # 统计可训练参数
+        # Count trainable parameters.
         if is_main_process():
             trainable_params = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
             total_params = sum(p.numel() for p in self.model.parameters())
             print(f"\n : {finetune_mode}")
             print(f"   : {trainable_params:,} / {total_params:,} ({100*trainable_params/total_params:.1f}%)")
             
-            # 显示各模块状态
+            # Show the status of each module.
             module_status = {}
             for name, param in self.model.named_parameters():
                 module = name.split('.')[0]
@@ -451,7 +451,7 @@ class FewshotTrainer:
                     print(f"     {module}:   ({status['frozen']:,})")
     
     def setup_loss_function(self):
-        """设置损失函数"""
+        """Set up the loss function."""
         if is_main_process():
             print("\n ...")
         
@@ -483,23 +483,23 @@ class FewshotTrainer:
     
     def setup_optimizer(self):
         """
-        设置优化器
+        Set up the optimizer.
         
-        参考Fewshot_Detection的学习率调整:
+        Learning-rate adjustment follows Fewshot_Detection:
         - neg_ratio=0 -> factor=1.5
         - learning_rate /= factor
         """
         if is_main_process():
             print("\n ...")
         
-        # 获取可训练参数
+        # Get trainable parameters.
         trainable_params = filter(lambda p: p.requires_grad, self.model.parameters())
         
-        # 学习率调整（参考train_meta.py）
+        # Learning-rate adjustment based on train_meta.py.
         base_lr = self.config.get('learning_rate', 1e-4)
         neg_ratio = self.config.get('neg_ratio', 0)
         
-        # neg_ratio决定学习率因子
+        # neg_ratio determines the learning-rate factor.
         if neg_ratio == 0:
             factor = 1.5
         elif neg_ratio == 1:
@@ -514,7 +514,7 @@ class FewshotTrainer:
             print(f"  - neg_ratio: {neg_ratio} -> factor: {factor}")
             print(f"  - Adjusted LR: {adjusted_lr}")
         
-        # 创建优化器
+        # Create optimizer.
         optimizer_type = self.config.get('optimizer', 'adam')
         
         if optimizer_type == 'adam':
@@ -537,8 +537,8 @@ class FewshotTrainer:
                 weight_decay=self.config.get('weight_decay', 1e-4)
             )
         
-        # 调度器
-        # 参考Fewshot_Detection: max_epochs = ceil(max_epoch / repeat)
+        # Scheduler.
+        # Fewshot_Detection reference: max_epochs = ceil(max_epoch / repeat).
         max_epoch = self.config.get('max_epoch', 2000)
         repeat = self.config.get('repeat', 1)
         effective_epochs = int(np.ceil(max_epoch / 50))
@@ -566,11 +566,11 @@ class FewshotTrainer:
             print(f"   : {optimizer_type}")
             print(f"   : {scheduler_type}")
         
-        # 保存effective_epochs供训练使用
+        # Save effective_epochs for training.
         self.effective_epochs = effective_epochs
     
     def setup_logging(self):
-        """设置日志"""
+        """Set up logging."""
         if not is_main_process():
             return
         
@@ -584,7 +584,7 @@ class FewshotTrainer:
         self.exp_dir = os.path.join(self.config['output_dir'], exp_name)
         os.makedirs(self.exp_dir, exist_ok=True)
         
-        # 保存配置
+        # Save config.
         config_path = os.path.join(self.exp_dir, 'config.json')
         with open(config_path, 'w') as f:
             json.dump(self.config, f, indent=2)
@@ -598,7 +598,7 @@ class FewshotTrainer:
         print(f"   : {self.exp_dir}")
     
     def train_epoch(self, epoch):
-        """训练一个epoch"""
+        """Train one epoch."""
         self.model.train()
         
         train_losses = []
@@ -659,7 +659,7 @@ class FewshotTrainer:
         return avg_loss, avg_time
     
     def validate_epoch(self, epoch):
-        """验证一个epoch"""
+        """Validate one epoch."""
         if self.val_loader is None:
             return 0.0, {}
         
@@ -668,7 +668,7 @@ class FewshotTrainer:
         all_logits = []
         all_labels = []
         
-        # 收集前5个batch的预测和标签用于详细输出
+        # Collect predictions and labels from the first five batches for detailed output.
         first_5_batches_logits = []
         first_5_batches_labels = []
         first_5_batches_metadata = []
@@ -698,7 +698,7 @@ class FewshotTrainer:
                 all_logits.append(batch_logits)
                 all_labels.append(batch_labels)
                 
-                # 收集前5个batch
+                # Collect the first five batches.
                 if batch_count < 5:
                     first_5_batches_logits.append(batch_logits)
                     first_5_batches_labels.append(batch_labels)
@@ -711,7 +711,7 @@ class FewshotTrainer:
         metrics = MultiLabelMetrics.compute_metrics(all_logits, all_labels, self.config)
         avg_loss = np.mean(val_losses)
         
-        # 计算novel classes的详细指标
+        # Compute detailed metrics for novel classes.
         base_classes = self.config.get('base_classes', list(range(60)))
         novel_classes = self.config.get('novel_classes', [])
         all_classes = sorted(base_classes + novel_classes)
@@ -728,16 +728,26 @@ class FewshotTrainer:
         
         if is_main_process():
             self.writer.add_scalar('Val/EpochLoss', avg_loss, epoch)
+            self.writer.add_scalar('Val/soft_mAP', metrics['soft_mAP'], epoch)
             self.writer.add_scalar('Val/sig_mAP', metrics['sig_mAP'], epoch)
+            self.writer.add_scalar('Val/soft_roc_auc', metrics['soft_roc_auc'], epoch)
+            self.writer.add_scalar('Val/sig_roc_auc', metrics['sig_roc_auc'], epoch)
             self.writer.add_scalar('Val/pk', metrics['pk'], epoch)
+            self.writer.add_scalar('Val/mapk', metrics['mapk'], epoch)
             self.writer.add_scalar('Val/Novel_Avg_Precision', novel_metrics['avg_precision'], epoch)
             self.writer.add_scalar('Val/Novel_Avg_Recall', novel_metrics['avg_recall'], epoch)
             self.writer.add_scalar('Val/Novel_Avg_F1', novel_metrics['avg_f1'], epoch)
+            self.writer.add_scalar('Val/Novel_Pk', novel_metrics.get('novel_pk', 0.0), epoch)
+            self.writer.add_scalar('Val/Novel_Rk', novel_metrics.get('novel_rk', 0.0), epoch)
+            self.writer.add_scalar('Val/Novel_Acck', novel_metrics.get('novel_acck', 0.0), epoch)
+            self.writer.add_scalar('Val/Novel_Set_Accuracy', novel_metrics.get('novel_set_accuracy', 0.0), epoch)
+            self.writer.add_scalar('Val/Novel_Set_Precision', novel_metrics.get('novel_set_precision', 0.0), epoch)
+            self.writer.add_scalar('Val/Novel_Set_Recall', novel_metrics.get('novel_set_recall', 0.0), epoch)
             
-            # 打印novel classes详细指标
+            # Print detailed metrics for novel classes.
             MultiLabelMetrics.print_novel_class_metrics(novel_metrics, novel_classes)
             
-            # 打印前5个batch的预测结果
+            # Print prediction results for the first five batches.
             # self._print_first_5_batches(
             #     first_5_batches_logits, 
             #     first_5_batches_labels, 
@@ -751,14 +761,14 @@ class FewshotTrainer:
     def _print_first_5_batches(self, batches_logits, batches_labels, batches_metadata, 
                                activated_classes, novel_classes):
         """
-        打印前5个batch的预测结果和真实标签
+        Print predictions and ground-truth labels for the first five batches.
         
         Args:
-            batches_logits: 前5个batch的logits列表
-            batches_labels: 前5个batch的标签列表
-            batches_metadata: 前5个batch的元数据列表
-            activated_classes: 所有激活的类别列表
-            novel_classes: novel类别列表
+            batches_logits: Logits from the first five batches.
+            batches_labels: Labels from the first five batches.
+            batches_metadata: Metadata from the first five batches.
+            activated_classes: List of all active classes.
+            novel_classes: List of novel classes.
         """
         print("\n" + "="*80)
         print(" 5Batch")
@@ -769,27 +779,27 @@ class FewshotTrainer:
         ):
             print(f"\n--- Batch {batch_idx + 1} ---")
             
-            # 转换为numpy
+            # Convert to numpy.
             logits_np = batch_logits.numpy()
             labels_np = batch_labels.numpy()
             probs_np = sigmoid(logits_np)
             
             batch_size = logits_np.shape[0]
             
-            for sample_idx in range(min(3, batch_size)):  # 每个batch最多显示3个样本
+            for sample_idx in range(min(3, batch_size)):  # Show at most three samples per batch.
                 print(f"\n   {sample_idx + 1}:")
                 
-                # 获取真实标签
+                # Get ground-truth labels.
                 true_label_indices = np.where(labels_np[sample_idx] > 0.5)[0]
                 true_labels = [activated_classes[idx] for idx in true_label_indices]
                 
-                # 获取预测标签（top-k，k=真实标签数）
+                # Get predicted labels using top-k, where k is the number of true labels.
                 k = len(true_label_indices) if len(true_label_indices) > 0 else 1
                 top_k_indices = np.argsort(probs_np[sample_idx])[-k:][::-1]
                 pred_labels = [activated_classes[idx] for idx in top_k_indices]
                 pred_probs = [probs_np[sample_idx][idx] for idx in top_k_indices]
                 
-                # 分离base和novel
+                # Separate base and novel labels.
                 true_base = [l for l in true_labels if l not in novel_classes]
                 true_novel = [l for l in true_labels if l in novel_classes]
                 pred_base = [l for l in pred_labels if l not in novel_classes]
@@ -800,7 +810,7 @@ class FewshotTrainer:
                 print(f"     (Base): {pred_base}")
                 print(f"     (Novel): {pred_novel}")
                 
-                # 显示novel classes的预测概率
+                # Show predicted probabilities for novel classes.
                 if novel_classes:
                     novel_probs = []
                     class_to_idx = {cls_id: idx for idx, cls_id in enumerate(activated_classes)}
@@ -814,12 +824,12 @@ class FewshotTrainer:
                         novel_probs_str = ", ".join([f"C{cls}:{prob:.3f}" for cls, prob in novel_probs])
                         print(f"Novel: {novel_probs_str}")
                 
-                # 计算该样本的匹配情况
+                # Compute the match count for this sample.
                 correct_base = len(set(true_base) & set(pred_base))
                 correct_novel = len(set(true_novel) & set(pred_novel))
                 print(f"    : Base={correct_base}/{len(true_base)}, Novel={correct_novel}/{len(true_novel)}")
                 
-                # 显示文件名（如果有）
+                # Show filename if available.
                 if sample_idx < len(batch_metadata):
                     metadata = batch_metadata[sample_idx]
                     if 'filename' in metadata:
@@ -828,7 +838,7 @@ class FewshotTrainer:
         print("\n" + "="*80)
     
     def train(self):
-        """完整训练流程"""
+        """Run the full training workflow."""
         if is_main_process():
             print("\n" + "="*60)
             print(" Few-shot")
@@ -838,14 +848,26 @@ class FewshotTrainer:
             print(f"   - {self.config.get('finetune_mode', 'full')}")
             print(f"  - Effective epochs: {self.effective_epochs}")
 
-        # 初始评估（未微调）
+        # Initial evaluation before fine-tuning.
         if is_main_process():
             print("\n ...")
         init_val_loss, init_val_metrics = self.validate_epoch(-1)
         if is_main_process() and init_val_metrics:
             print(f"Init Val Loss: {init_val_loss:.4f}")
             MultiLabelMetrics.print_metrics_summary(init_val_metrics)
-            self.best_map = max(self.best_map, init_val_metrics.get('sig_mAP', 0.0))
+            self.best_map = init_val_metrics.get('sig_mAP', 0.0)
+            final_metrics = init_val_metrics
+            model_to_save = self.model.module if self.is_distributed else self.model
+            self.model_manager.save_checkpoint(
+                model=model_to_save,
+                optimizer=self.optimizer,
+                scheduler=self.scheduler,
+                epoch=-1,
+                metrics=init_val_metrics,
+                is_best=True
+            )
+        else:
+            final_metrics = {}
         if self.is_distributed:
             dist.barrier()
         
@@ -869,6 +891,7 @@ class FewshotTrainer:
                 if val_metrics:
                     print(f"Val Loss: {val_loss:.4f}")
                     MultiLabelMetrics.print_metrics_summary(val_metrics)
+                    final_metrics = val_metrics
                     
                     is_best = val_metrics.get('sig_mAP', 0) > self.best_map
                     if is_best:
@@ -895,13 +918,21 @@ class FewshotTrainer:
                 self.scheduler.step()
         
         if is_main_process():
+            model_to_save = self.model.module if self.is_distributed else self.model
+            self.model_manager.save_final_checkpoint(
+                model=model_to_save,
+                optimizer=self.optimizer,
+                scheduler=self.scheduler,
+                epoch=self.effective_epochs - 1,
+                metrics=final_metrics
+            )
             print(f"\nFew-shotmAP: {self.best_map:.4f}")
             if self.writer:
                 self.writer.close()
 
 
 def run_distributed_training(rank, world_size, config):
-    """分布式训练入口"""
+    """Distributed training entry point."""
     try:
         setup_distributed_training(rank, world_size, config)
         
@@ -923,9 +954,9 @@ def run_distributed_training(rank, world_size, config):
 
 
 def get_fewshot_config():
-    """获取Few-shot配置"""
+    """Get the few-shot config."""
     parser = argparse.ArgumentParser(description='Few-shot Fine-tuning')
-    parser.add_argument('--config', type=str, required=True, help='配置文件路径')
+    parser.add_argument('--config', type=str, required=True, help='Path to the config file')
     args = parser.parse_args()
     
     if not os.path.exists(args.config):
@@ -935,7 +966,7 @@ def get_fewshot_config():
     with open(args.config, 'r') as f:
         config = json.load(f)
     
-    # 验证必要字段
+    # Validate required fields.
     required_fields = [
         'train_query_json', 'train_query_dir', 'train_support_dir',
         'base_classes', 'novel_classes', 'k_shot'
@@ -946,7 +977,7 @@ def get_fewshot_config():
             print(f" : {field}")
             return None
     
-    # GPU验证
+    # Validate GPU settings.
     if torch.cuda.is_available():
         gpus = config.get('gpus', [0])
         available_gpus = torch.cuda.device_count()
@@ -1005,4 +1036,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

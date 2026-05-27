@@ -56,6 +56,7 @@ MMF_merged/
 ├── test_finetune.py           # Evaluate fine-tuned model on novel classes
 ├── generate_multitab_datasets.py  # Synthesize multi-tab traces from single-tab data
 ├── run_experiments.py         # Batch experiment runner
+├── revision_overlap_simulate_stats.py  # Duration-only overlap statistics for revision studies
 │
 ├── models/
 │   ├── feature_extractors.py  # EnhancedMultiMetaFingerNet (main model)
@@ -67,19 +68,21 @@ MMF_merged/
 │   ├── meta_traffic_dataloader.py # DataLoader wrapper
 │   ├── multi_tab_generator.py     # Multi-tab trace synthesis core
 │   ├── fewshot_dataset_generator.py  # Few-shot dataset generator (default, supports OW)
-
+│   └── process_npz_data.py        # Convert npz traces into per-class pkl files
 │
 ├── utils/
 │   ├── metrics.py             # Evaluation metrics (mAP, ROC-AUC, P@k, R@k, Novel metrics)
+│   ├── metric_few.py          # Few-shot metric helpers and reporting utilities
 │   ├── loss_functions.py      # WeightedBCE, FocalLoss, ASL
 │   ├── model_manager.py       # Checkpoint save/load
 │   └── misc.py                # Distributed training utilities
 │
-└── configs/
-    ├── base_train/
-    │   └── example_3tab.json  # Example base training config (3-tab)
-    └── fewshot/
-        └── example_20shot_3tab.json  # Example fine-tuning config (20-shot, 3-tab)
+├── experiments/               # Saved checkpoints
+├── configs/                   # experiment configs
+├── overhead_bench/            # System-overhead and scalability benchmark scripts
+├── Overlap_statisctic/        # Generated overlap-statistic reports and heatmaps
+│
+└── figs/                      # Figures used by the paper and README
 ```
 
 ---
@@ -88,7 +91,7 @@ MMF_merged/
 
 ```bash
 git clone <repo_url>
-cd MMF_merged
+cd MMF
 pip install torch torchvision torchaudio  # PyTorch >= 1.12
 pip install numpy scikit-learn tqdm tensorboard
 ```
@@ -101,16 +104,19 @@ pip install numpy scikit-learn tqdm tensorboard
 
 ### Step 0: Prepare Single-tab Data
 
-MMF uses the public CW/OW dataset from [Deep Fingerprinting (DF)](https://dl.acm.org/doi/pdf/10.1145/3243734.3243768). Download the `.npz` files and preprocess with:
+MMF uses the public CW/OW dataset from [WFlib](https://zenodo.org/records/13732130). Download the `.npz` files or the OW.npz.zip in zenodo and preprocess with:
 
 ```bash
-python data/process_npz_data.py --input /path/to/CW.npz --output /path/to/single_tab_data
+python data/process_npz_data.py --npz_path /path/to/CW.npz --output_dir /path/to/single_tab_data
 ```
 
 Then isolate training data from valid data (support OW scenario):
 
 ```bash
-python data/split_ow_folder.py --input /path/to/OW_data --output /path/to/OW_split
+python data/split_ow_folder.py \
+    --ow /path/to/OW_data \
+    --train /path/to/OW_split/train \
+    --test /path/to/OW_split/test
 ```
 
 ---
@@ -181,28 +187,60 @@ Add `--ow` to include unmonitored (class 95) traffic for open-world few-shot eva
 
 ### Step 4: Few-shot Fine-tuning
 
-Edit `configs/fewshot/example_20shot_3tab.json` to set your data paths and the `checkpoint_path` from Step 2:
+Edit `configs/fewshot/30novel_20shot_3tab.json` to set your data paths and the `checkpoint_path` from Step 2. Few-shot fine-tuning can start directly from a saved base checkpoint. When the number of classes changes after adding novel classes, `finetune.py` loads the compatible layers and skips shape-mismatched classifier parameters.
 
 ```bash
 # Single experiment
-python finetune.py --config configs/fewshot/example_20shot_3tab.json
+python finetune.py --config configs/fewshot/30novel_20shot_3tab.json
 ```
 
 ---
 
 ### Step 5: Evaluation
 
-**Evaluate base model** (mAP, ROC-AUC, reweighting coefficient visualization):
+**Evaluate a saved base model** (mAP, ROC-AUC, P@k):
 
 ```bash
-python evaluate_base.py --config configs/base_train/example_mixed_tab.json
+python evaluate_base.py \
+    --config configs/base_train/example_mixed_tab.json \
+    --ckpt_path /path/to/base/checkpoints/best_model.pth
 ```
 
-**Evaluate few-shot model** (Overall mAP/AUC + Novel P@k / R@k):
+`evaluate_base.py` reads the checkpoint path from the command line. It accepts common checkpoint formats (`model_state_dict`, `state_dict`, or a raw state dict), strips a `module.` prefix from DDP checkpoints, and skips incompatible tensors when evaluating with a different class head.
+
+**Evaluate a saved few-shot model** (Overall mAP/AUC + P@k + Novel P@k / R@k):
 
 ```bash
 python test_finetune.py --config configs/fewshot/example_20shot_3tab.json
 ```
+
+
+
+---
+
+## Additional Analysis Utilities
+
+**System-overhead benchmark.** `overhead_bench/` measures single-GPU, batch-1 static complexity, training cost, fine-tuning cost, cached inference latency, one-class onboarding, and ARES-style one-vs-all overhead. Use a smoke test first, then run the full benchmark on an idle GPU:
+
+```bash
+MMF_BENCH_GPU=1 PYTHONPATH=. python -m overhead_bench.run_all --smoke
+MMF_BENCH_GPU=1 PYTHONPATH=. python -m overhead_bench.run_all
+```
+
+The aggregated report is written to `overhead_bench/results/results_all.json`; selected scalability plots/tables are written under `overhead_bench/results/`.
+
+**Overlap statistics.** `revision_overlap_simulate_stats.py` performs a duration-only simulation of actual adjacent-pair overlap ratios without writing synthesized query/support samples:
+
+```bash
+python revision_overlap_simulate_stats.py \
+    --source-root /path/to/OW_split \
+    --output-dir Overlap_statisctic \
+    --profile paper \
+    --num-tabs 4
+```
+
+This produces JSON/text summaries plus PNG/PDF heatmaps, e.g. `Overlap_statisctic/simulated_overlap_distribution_4tab.json` and `Overlap_statisctic/simulated_overlap_distribution_4tab_heatmap.png`.
+
 ---
 
 ## Datasets
@@ -216,7 +254,7 @@ MMF is evaluated on two data sources:
 | CW (DF) | 60 base + 30 novel | Closed-world |
 | OW (DF) | 60 base + 30 novel + unmonitored | Open-world |
 | WTF-PAD | 60 base + 30 novel | Defense-aware |
-| Walkie-Talkie | 60 base + 30 novel | Defense-aware |
+| Front| 60 base + 30 novel | Defense-aware |
 
 **Self-collected real-world dataset** — 50 popular websites × {3,4,5}-tab combinations collected over ~2 months from Singapore servers. 25 additional websites with limited traces are used as novel classes for few-shot evaluation. Collection follows the ARES pipeline with Docker-isolated Tor Browser sessions.
 

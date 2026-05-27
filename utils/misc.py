@@ -18,21 +18,21 @@ import random
 import warnings
 warnings.filterwarnings('ignore')
 
-# 添加模块路径
+# Add module path.
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 def setup_distributed_training(rank, world_size, config):
     """
-    设置分布式训练环境
+    Set up the distributed training environment.
     
     Args:
-        rank: 当前进程的rank
-        world_size: 总进程数
-        config: 配置字典
+        rank: Rank of the current process.
+        world_size: Total number of processes.
+        config: Configuration dictionary.
     """
-    # 设置CUDA设备
+    # Set CUDA device.
     torch.cuda.set_device(rank)
     
-    # 初始化进程组
+    # Initialize the process group.
     os.environ['MASTER_ADDR'] = config.get('master_addr', 'localhost')
     os.environ['MASTER_PORT'] = config.get('master_port', '12355')
     
@@ -43,7 +43,7 @@ def setup_distributed_training(rank, world_size, config):
         rank=rank
     )
     
-    print(f"🚀 分布式训练初始化完成 - Rank: {rank}/{world_size}")
+    print(f"Distributed training initialized - Rank: {rank}/{world_size}")
 
 def setup_seed(seed):
      torch.manual_seed(seed)
@@ -55,68 +55,68 @@ def setup_seed(seed):
 
 
 def cleanup_distributed_training():
-    """清理分布式训练环境"""
+    """Clean up the distributed training environment."""
     if dist.is_initialized():
         dist.destroy_process_group()
 
 
 def is_main_process():
-    """检查是否为主进程"""
+    """Check whether this is the main process."""
     return not dist.is_initialized() or dist.get_rank() == 0
 
 def validate_gpu_config(config):
     """
-    验证GPU配置的合法性
+    Validate the GPU configuration.
     
     Args:
-        config: 配置字典
+        config: Configuration dictionary.
         
     Returns:
-        validated_config: 验证后的配置
-        is_valid: 是否有效
-        error_msg: 错误信息
+        validated_config: Validated configuration.
+        is_valid: Whether the configuration is valid.
+        error_msg: Error message.
     """
     try:
-        # 检查是否有CUDA支持
+        # Check CUDA availability.
         if not torch.cuda.is_available():
             if config.get('use_distributed', False):
-                return config, False, "❌ CUDA不可用，无法进行GPU训练"
+                return config, False, "CUDA is unavailable, so GPU training cannot run"
             else:
-                print("⚠️ CUDA不可用，将使用CPU训练")
+                print("CUDA is unavailable; using CPU training")
                 config['use_distributed'] = False
                 return config, True, ""
         
-        # 检查GPU数量
+        # Check the number of GPUs.
         available_gpus = torch.cuda.device_count()
-        print(f"🔍 检测到 {available_gpus} 个GPU")
+        print(f"Detected {available_gpus} GPUs")
         
-        # 验证请求的GPU是否存在
+        # Validate requested GPU IDs.
         requested_gpus = config.get('gpus', [0])
         if not isinstance(requested_gpus, list):
-            return config, False, "❌ 'gpus' 配置必须是列表"
+            return config, False, "'gpus' must be a list"
         
         for gpu_id in requested_gpus:
             if gpu_id >= available_gpus:
-                return config, False, f"❌ GPU {gpu_id} 不存在（只有 {available_gpus} 个GPU）"
+                return config, False, f"GPU {gpu_id} does not exist; only {available_gpus} GPUs are available"
         
-        # 设置分布式训练模式
+        # Set distributed training mode.
         num_gpus = len(requested_gpus)
         if num_gpus > 1:
             config['use_distributed'] = True
-            print(f"✅ 将使用 {num_gpus} 个GPU进行分布式训练: {requested_gpus}")
+            print(f"Using {num_gpus} GPUs for distributed training: {requested_gpus}")
         else:
             config['use_distributed'] = False
-            print(f"✅ 将使用单GPU训练: GPU {requested_gpus[0]}")
+            print(f"Using single-GPU training: GPU {requested_gpus[0]}")
         
         return config, True, ""
         
     except Exception as e:
-        return config, False, f"❌ GPU配置验证失败: {e}"
+        return config, False, f"GPU configuration validation failed: {e}"
 
 
 def get_args():
     parser = argparse.ArgumentParser(description='Enhanced Training with Mixed Scheme C')
-    parser.add_argument('--config', type=str, default='configs/config.json',help='配置文件路径')
+    parser.add_argument('--config', type=str, default='configs/config.json', help='Path to the config file')
     
     
     args = parser.parse_args()
@@ -124,26 +124,26 @@ def get_args():
 
 def get_final_config():
     config = {}
-    # 加载配置文件
+    # Load config file.
     args = get_args()
     if os.path.exists(args.config):
         with open(args.config, 'r') as f:
             user_config = json.load(f)
             config.update(user_config)
     else:
-        print('请检查配置文件')
+        print('Please check the config file')
     
-    # 验证GPU配置
+    # Validate GPU configuration.
     config, is_valid, error_msg = validate_gpu_config(config)
     if not is_valid:
         print(error_msg)
         return
 
-    print("开始训练...")
-    print(f"📋 配置:")
-    print(f"  - 分布式: {config['use_distributed']}")
+    print("Starting training...")
+    print(f"Configuration:")
+    print(f"  - Distributed: {config['use_distributed']}")
     print(f"  - GPU: {config['gpus']}")
-    print(f"  - DF使用SE: {config['use_se_in_df']}")
+    print(f"  - DF uses SE: {config['use_se_in_df']}")
     
     return config
 if __name__ == '__main__':

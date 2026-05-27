@@ -1,8 +1,8 @@
 """
-多标签数据集生成器
-基于时间戳的多trace合并，支持类别均衡的组合采样
-避免组合爆炸，参数化配置
-改进：保持组合顺序，增强均衡补偿
+Multi-label dataset generator.
+Merges multiple traces based on timestamps and supports class-balanced combination sampling.
+Avoids combination explosion through parameterized configuration.
+Improvement: preserves combination order and strengthens balance compensation.
 """
 
 import os
@@ -19,15 +19,15 @@ import uuid
 
 class CombinationSampler:
     """
-    类别均衡的组合采样器
-    避免C(n,k)组合爆炸，通过迭代采样确保类别分布均衡
+    Class-balanced combination sampler.
+    Avoids C(n,k) combination explosion and keeps class distribution balanced through iterative sampling.
     """
     
     def __init__(self, num_classes: int = 60, random_seed: int = 42):
         """
         Args:
-            num_classes: 类别总数（默认60，对应0-59）
-            random_seed: 随机种子
+            num_classes: Total number of classes; defaults to 60 for 0-59.
+            random_seed: Random seed.
         """
         self.num_classes = num_classes
         self.random_seed = random_seed
@@ -40,91 +40,91 @@ class CombinationSampler:
         target_num_combinations: int,
         max_std_ratio: float = 0.10,
         max_iterations: int = 100000,
-        check_interval: int = 20,  # 更频繁地检查均衡性
-        balance_attempts: int = 20  # 每次不均衡时尝试的次数
+        check_interval: int = 20,  # Check balance more frequently.
+        balance_attempts: int = 20  # Number of attempts for each imbalance correction.
     ) -> Tuple[List[Tuple[int]], Dict]:
         """
-        生成类别均衡的组合（不排序，保持顺序）
+        Generate class-balanced combinations without sorting, preserving order.
         
         Args:
-            k: 每个组合的类别数（tab数）
-            target_num_combinations: 目标组合数量
-            max_std_ratio: 最大标准差/均值比例（默认10%）
-            max_iterations: 最大迭代次数
-            check_interval: 均衡性检查间隔
-            balance_attempts: 每次不均衡时的补偿尝试次数
+            k: Number of classes per combination, i.e. tab count.
+            target_num_combinations: Target number of combinations.
+            max_std_ratio: Maximum std/mean ratio; defaults to 10%.
+            max_iterations: Maximum number of iterations.
+            check_interval: Balance check interval.
+            balance_attempts: Number of compensation attempts for each imbalance.
             
         Returns:
-            combinations: 组合列表，每个组合是k个类别的元组（保持生成顺序）
-            statistics: 统计信息字典
+            combinations: List of combinations, each a tuple of k classes in generated order.
+            statistics: Statistics dictionary.
         """
-        print(f"\n开始生成{k}-tab的{target_num_combinations}个均衡组合...")
-        print(f"  - 类别范围: 0-{self.num_classes-1}")
-        print(f"  - 均衡约束: std/mean < {max_std_ratio}")
-        print(f"  - 检查间隔: 每{check_interval}个组合")
-        print(f"  - 保持组合顺序: 是")
+        print(f"\nGenerating {target_num_combinations} balanced combinations for {k}-tab...")
+        print(f"  - Class range: 0-{self.num_classes-1}")
+        print(f"  - Balance constraint: std/mean < {max_std_ratio}")
+        print(f"  - Check interval: every {check_interval} combinations")
+        print(f"  - Preserve combination order: yes")
         
         combinations = set()
         class_counts = Counter()
         
-        # 迭代采样，确保类别均衡
+        # Iteratively sample to keep classes balanced.
         iteration = 0
         total_balance_attempts = 0
         
         while len(combinations) < target_num_combinations and iteration < max_iterations:
             need_balance = False
             
-            # 定期检查均衡性
+            # Check balance periodically.
             if len(combinations) > 0 and len(combinations) % check_interval == 0:
                 counts = [class_counts[i] for i in range(self.num_classes)]
-                if any(counts):  # 避免除零
+                if any(counts):  # Avoid division by zero.
                     mean_count = np.mean(counts)
                     std_count = np.std(counts)
                     std_ratio = std_count / mean_count if mean_count > 0 else 0
                     
                     if std_ratio > max_std_ratio:
                         need_balance = True
-                        # 打印当前不均衡状态
-                        print(f"  检测到不均衡 @ {len(combinations)}个组合: std/mean={std_ratio:.4f}")
+                        # Print the current imbalance status.
+                        print(f"  Imbalance detected at {len(combinations)} combinations: std/mean={std_ratio:.4f}")
             
             if need_balance:
-                # 执行均衡补偿
+                # Apply balance compensation.
                 counts = [class_counts[i] for i in range(self.num_classes)]
                 mean_count = np.mean(counts) if counts else 0
                 
-                # 找出所有低于平均值的类别
+                # Find all classes below the mean.
                 underrepresented = [
                     cls for cls in range(self.num_classes) 
                     if class_counts[cls] < mean_count
                 ]
                 
-                # 尝试生成包含欠代表类别的组合
+                # Try to generate combinations that include underrepresented classes.
                 balanced_combos_added = 0
                 for _ in range(balance_attempts):
                     if len(underrepresented) >= k:
-                        # 全部从欠代表类别中选择
+                        # Select all classes from underrepresented classes.
                         selected = np.random.choice(underrepresented, size=k, replace=False)
                     elif len(underrepresented) > 0:
-                        # 优先选择欠代表类别，然后补充其他类别
+                        # Prioritize underrepresented classes, then fill with other classes.
                         n_under = len(underrepresented)
                         selected_under = np.random.choice(underrepresented, size=min(n_under, k), replace=False)
                         
-                        # 从其他类别中补充
+                        # Fill from other classes.
                         other_classes = [c for c in range(self.num_classes) if c not in selected_under]
                         n_need = k - len(selected_under)
                         
-                        # 优先选择出现次数较少的其他类别
+                        # Prioritize other classes that appear less often.
                         other_classes.sort(key=lambda x: class_counts[x])
                         selected_other = np.random.choice(other_classes[:len(other_classes)//2], 
                                                         size=n_need, replace=False)
                         
                         selected = np.concatenate([selected_under, selected_other])
-                        np.random.shuffle(selected)  # 打乱顺序
+                        np.random.shuffle(selected)  # Shuffle order.
                     else:
-                        # 如果没有欠代表类别，正常随机
+                        # Fall back to normal random sampling if no class is underrepresented.
                         selected = np.random.choice(self.num_classes, size=k, replace=False)
                     
-                    # 不排序，保持随机顺序
+                    # Do not sort; keep the random order.
                     combo = tuple(selected.tolist())
                     
                     if combo not in combinations:
@@ -133,17 +133,17 @@ class CombinationSampler:
                             class_counts[cls] += 1
                         balanced_combos_added += 1
                         
-                        # 如果成功添加了足够的均衡组合，可以提前退出
+                        # Exit early after adding enough balanced combinations.
                         if balanced_combos_added >= check_interval // 2:
                             break
                 
                 total_balance_attempts += 1
-                print(f"    -> 添加了{balanced_combos_added}个均衡组合")
+                print(f"    -> Added {balanced_combos_added} balanced combinations")
                 
             else:
-                # 正常随机生成组合（不排序）
+                # Normal random combination generation without sorting.
                 selected = np.random.choice(self.num_classes, size=k, replace=False)
-                combo = tuple(selected.tolist())  # 保持生成的顺序
+                combo = tuple(selected.tolist())  # Preserve generated order.
                 
                 if combo not in combinations:
                     combinations.add(combo)
@@ -152,19 +152,19 @@ class CombinationSampler:
             
             iteration += 1
             
-            # 进度显示
+            # Show progress.
             if len(combinations) % 500 == 0:
                 counts = [class_counts[i] for i in range(self.num_classes)]
                 mean_count = np.mean(counts)
                 std_count = np.std(counts)
                 std_ratio = std_count / mean_count if mean_count > 0 else 0
-                print(f"  进度: {len(combinations)}/{target_num_combinations}, "
+                print(f"  Progress: {len(combinations)}/{target_num_combinations}, "
                       f"std/mean: {std_ratio:.4f}")
         
-        # 转换为列表
+        # Convert to a list.
         combinations_list = list(combinations)
         
-        # 计算最终统计信息
+        # Compute final statistics.
         counts = [class_counts[i] for i in range(self.num_classes)]
         mean_count = np.mean(counts)
         std_count = np.std(counts)
@@ -183,28 +183,28 @@ class CombinationSampler:
             'total_balance_attempts': int(total_balance_attempts)
         }
         
-        print(f"\n[OK] 组合生成完成:")
-        print(f"  - 生成组合数: {len(combinations_list)}")
-        print(f"  - 类别频率: 均值={mean_count:.2f}, 标准差={std_count:.2f}")
-        print(f"  - 均衡度: std/mean={std_ratio:.4f}")
-        print(f"  - 频率范围: [{min(counts)}, {max(counts)}]")
-        print(f"  - 均衡补偿次数: {total_balance_attempts}")
+        print(f"\n[OK] Combination generation complete:")
+        print(f"  - Generated combinations: {len(combinations_list)}")
+        print(f"  - Class frequency: mean={mean_count:.2f}, std={std_count:.2f}")
+        print(f"  - Balance: std/mean={std_ratio:.4f}")
+        print(f"  - Frequency range: [{min(counts)}, {max(counts)}]")
+        print(f"  - Balance compensation attempts: {total_balance_attempts}")
         
         return combinations_list, statistics
 
 
 class TimeBasedMerger:
     """
-    基于时间戳的多trace合并器
-    通过启动延迟控制重叠，不破坏trace内部结构
+    Timestamp-based multi-trace merger.
+    Controls overlap through start delays without breaking each trace's internal structure.
     
-    关键：处理trace时间跨度包含的边界情况
+    Key point: handles boundary cases where trace time spans contain each other.
     """
     
     def __init__(self, overlap_range: Tuple[float, float] = (0.0, 0.4)):
         """
         Args:
-            overlap_range: 重叠比例范围 [min, max]
+            overlap_range: Overlap ratio range [min, max].
         """
         self.overlap_range = overlap_range
         
@@ -214,19 +214,19 @@ class TimeBasedMerger:
         overlap_ratios: Optional[List[float]] = None
     ) -> Dict:
         """
-        合并多个trace，基于时间戳和重叠比例
+        Merge multiple traces based on timestamps and overlap ratios.
         
         Args:
-            traces: trace列表，每个trace是{'time': array, 'data': array, 'label': int}
-            overlap_ratios: 重叠比例列表，长度为len(traces)-1
-                          如果为None，则随机生成
+            traces: List of traces; each trace is {'time': array, 'data': array, 'label': int}.
+            overlap_ratios: List of overlap ratios with length len(traces)-1.
+                          If None, ratios are generated randomly.
                           
         Returns:
-            merged_trace: 合并后的trace字典
+            merged_trace: Merged trace dictionary.
         """
         num_traces = len(traces)
         
-        # 生成或验证重叠比例
+        # Generate or validate overlap ratios.
         if overlap_ratios is None:
             overlap_ratios = [
                 random.uniform(self.overlap_range[0], self.overlap_range[1])
@@ -234,26 +234,26 @@ class TimeBasedMerger:
             ]
         else:
             assert len(overlap_ratios) == num_traces - 1, \
-                f"重叠比例数量应为{num_traces-1}，实际为{len(overlap_ratios)}"
+                f"Expected {num_traces-1} overlap ratios, got {len(overlap_ratios)}"
         
-        # 计算每个trace的总时长
+        # Calculate the total duration of each trace.
         durations = [trace['time'][-1] - trace['time'][0] for trace in traces]
         
-        # 计算每个trace的启动时间
-        start_times = [0.0]  # 第一个trace从0开始
+        # Calculate the start time of each trace.
+        start_times = [0.0]  # The first trace starts at 0.
         
         for i in range(1, num_traces):
-            # 前一个trace的启动时间 + 前一个trace总时长 × (1 - 重叠比例)
+            # Previous start time + previous duration x (1 - overlap ratio).
             prev_start = start_times[i-1]
             prev_duration = durations[i-1]
             overlap_ratio = overlap_ratios[i-1]
             
-            # 新trace的启动时间
+            # Start time of the new trace.
             new_start = prev_start + prev_duration * (1.0 - overlap_ratio)
             start_times.append(new_start)
         
-        # 调整每个trace的时间戳并合并
-        all_packets = []  # (时间戳, 方向, trace_id)
+        # Adjust timestamps for each trace and merge.
+        all_packets = []  # (timestamp, direction, trace_id)
         
         for trace_id, trace in enumerate(traces):
             adjusted_times = trace['time'] + start_times[trace_id]
@@ -261,23 +261,23 @@ class TimeBasedMerger:
             for t, d in zip(adjusted_times, trace['data']):
                 all_packets.append((t, d, trace_id))
         
-        # 按时间戳排序
+        # Sort by timestamp.
         all_packets.sort(key=lambda x: x[0])
         
-        # 提取排序后的时间和数据
+        # Extract sorted time and data.
         merged_time = np.array([p[0] for p in all_packets])
         merged_data = np.array([p[1] for p in all_packets])
         
-        # 生成标签列表（保持原始顺序）
+        # Generate the label list while preserving original order.
         labels = [trace['label'] for trace in traces]
         
-        # 计算统计信息
+        # Calculate statistics.
         total_duration = merged_time[-1] - merged_time[0]
         
         merged_trace = {
             'time': merged_time,
             'data': merged_data,
-            'labels': labels,  # 多标签（按顺序）
+            'labels': labels,  # Multi-labels in order.
             'metadata': {
                 'num_traces': num_traces,
                 'overlap_ratios': overlap_ratios,
@@ -292,47 +292,47 @@ class TimeBasedMerger:
     
     def validate_merge(self, merged_trace: Dict, verbose: bool = False) -> bool:
         """
-        验证合并结果的正确性
+        Validate the correctness of the merge result.
         
         Args:
-            merged_trace: 合并后的trace
-            verbose: 是否打印详细信息
+            merged_trace: Merged trace.
+            verbose: Whether to print detailed information.
             
         Returns:
-            is_valid: 是否有效
+            is_valid: Whether the result is valid.
         """
         time = merged_trace['time']
         data = merged_trace['data']
         metadata = merged_trace['metadata']
         
-        # 检查1: 时间戳单调递增
+        # Check 1: timestamps are monotonically increasing.
         is_monotonic = np.all(np.diff(time) >= 0)
         
-        # 检查2: 数据长度一致
+        # Check 2: data lengths are consistent.
         length_match = len(time) == len(data) == metadata['merged_length']
         
-        # 检查3: 标签数量与trace数量一致
+        # Check 3: the number of labels matches the number of traces.
         labels_match = len(merged_trace['labels']) == metadata['num_traces']
         
         is_valid = is_monotonic and length_match and labels_match
         
         if verbose or not is_valid:
-            print(f"  验证结果:")
-            print(f"    - 时间戳单调递增: {'PASS' if is_monotonic else 'FAIL'}")
-            print(f"    - 数据长度一致: {'PASS' if length_match else 'FAIL'}")
-            print(f"    - 标签数量正确: {'PASS' if labels_match else 'FAIL'}")
+            print(f"  Validation result:")
+            print(f"    - Timestamps monotonically increasing: {'PASS' if is_monotonic else 'FAIL'}")
+            print(f"    - Data lengths match: {'PASS' if length_match else 'FAIL'}")
+            print(f"    - Label count is correct: {'PASS' if labels_match else 'FAIL'}")
             if not is_monotonic:
                 non_monotonic = np.where(np.diff(time) < 0)[0]
-                print(f"    - 非单调位置: {non_monotonic[:5]}...")
+                print(f"    - Non-monotonic positions: {non_monotonic[:5]}...")
         
         return is_valid
 
 
 class MultiTabDatasetGenerator:
     """
-    完整的多标签数据集生成器
-    支持fixed-tab模式（每次生成单一tab数的数据集）
-    改进：保持组合顺序，增强均衡补偿
+    Complete multi-label dataset generator.
+    Supports fixed-tab mode, generating one dataset with a single tab count at a time.
+    Improvement: preserves combination order and strengthens balance compensation.
     """
     
     def __init__(
@@ -345,11 +345,11 @@ class MultiTabDatasetGenerator:
     ):
         """
         Args:
-            source_root: 单标签数据源根目录
-            output_root: 多标签数据集输出根目录
-            num_classes: 类别总数
-            overlap_range: 重叠比例范围
-            random_seed: 随机种子
+            source_root: Root directory for single-label data sources.
+            output_root: Root output directory for multi-label datasets.
+            num_classes: Total number of classes.
+            overlap_range: Overlap ratio range.
+            random_seed: Random seed.
         """
         self.source_root = source_root
         self.output_root = output_root
@@ -357,21 +357,21 @@ class MultiTabDatasetGenerator:
         self.overlap_range = overlap_range
         self.random_seed = random_seed
         
-        # 初始化组件
+        # Initialize components.
         self.sampler = CombinationSampler(num_classes, random_seed)
         self.merger = TimeBasedMerger(overlap_range)
         
-        # 设置随机种子
+        # Set random seeds.
         random.seed(random_seed)
         np.random.seed(random_seed)
         
     def load_single_label_sample(self, class_id: int, split: str) -> Dict:
         """
-        加载单标签样本
+        Load a single-label sample.
         
         Args:
-            class_id: 类别ID
-            split: 'train' 或 'test'
+            class_id: Class ID.
+            split: 'train' or 'test'.
             
         Returns:
             sample: {'time': array, 'data': array, 'label': int}
@@ -379,19 +379,19 @@ class MultiTabDatasetGenerator:
         class_dir = os.path.join(self.source_root, split, str(class_id))
         
         if not os.path.exists(class_dir):
-            raise FileNotFoundError(f"类别目录不存在: {class_dir}")
+            raise FileNotFoundError(f"Class directory does not exist: {class_dir}")
         
-        # 获取该类别的所有文件
+        # Get all files for this class.
         files = [f for f in os.listdir(class_dir) if f.endswith('.pkl')]
         
         if len(files) == 0:
-            raise ValueError(f"类别{class_id}在{split}中没有样本")
+            raise ValueError(f"Class {class_id} has no samples in {split}")
         
-        # 随机选择一个文件
+        # Randomly select one file.
         selected_file = random.choice(files)
         file_path = os.path.join(class_dir, selected_file)
         
-        # 加载数据
+        # Load data.
         with open(file_path, 'rb') as f:
             data = pickle.load(f)
         
@@ -410,42 +410,42 @@ class MultiTabDatasetGenerator:
         samples_per_combo: int,
         split: str = 'train',
         dataset_name: Optional[str] = None,
-        check_interval: int = 20,  # 可配置的检查间隔
-        balance_attempts: int = 20,  # 可配置的补偿尝试次数
-        add_ow_class: bool = False  # 是否添加OW类别95
+        check_interval: int = 20,  # Configurable check interval.
+        balance_attempts: int = 20,  # Configurable number of compensation attempts.
+        add_ow_class: bool = False  # Whether to add OW class 95.
     ) -> str:
         """
-        生成固定tab数的数据集
+        Generate a dataset with a fixed tab count.
         
         Args:
-            num_tabs: tab数量（2-5）
-            num_combinations: 组合数量
-            samples_per_combo: 每个组合生成的样本数
-            split: 'train' 或 'test'
-            dataset_name: 数据集名称（默认为"{num_tabs}tab"）
-            check_interval: 均衡性检查间隔
-            balance_attempts: 每次不均衡时的补偿尝试次数
-            add_ow_class: 是否在每个组合的随机位置添加OW类别95
+            num_tabs: Number of tabs, from 2 to 5.
+            num_combinations: Number of combinations.
+            samples_per_combo: Number of generated samples per combination.
+            split: 'train' or 'test'.
+            dataset_name: Dataset name; defaults to "{num_tabs}tab".
+            check_interval: Balance check interval.
+            balance_attempts: Number of compensation attempts for each imbalance.
+            add_ow_class: Whether to add OW class 95 at a random position in each combination.
             
         Returns:
-            output_dir: 输出目录路径
+            output_dir: Output directory path.
         """
         if dataset_name is None:
             dataset_name = f"{num_tabs}tab"
         
         print(f"\n{'='*60}")
-        print(f"生成{dataset_name}数据集 - {split}集")
+        print(f"Generating {dataset_name} dataset - {split} split")
         print(f"{'='*60}")
-        print(f"配置:")
-        print(f"  - Tab数: {num_tabs}")
-        print(f"  - 组合数: {num_combinations}")
-        print(f"  - 每组样本数: {samples_per_combo}")
-        print(f"  - 总样本数: {num_combinations * samples_per_combo}")
-        print(f"  - 重叠比例范围: {self.overlap_range}")
-        print(f"  - 保持组合顺序: 是")
-        print(f"  - 添加OW类别95: {'是' if add_ow_class else '否'}")
+        print(f"Configuration:")
+        print(f"  - Tab count: {num_tabs}")
+        print(f"  - Combinations: {num_combinations}")
+        print(f"  - Samples per combination: {samples_per_combo}")
+        print(f"  - Total samples: {num_combinations * samples_per_combo}")
+        print(f"  - Overlap ratio range: {self.overlap_range}")
+        print(f"  - Preserve combination order: yes")
+        print(f"  - Add OW class 95: {'yes' if add_ow_class else 'no'}")
         
-        # 创建输出目录
+        # Create output directories.
         output_dir = os.path.join(self.output_root, dataset_name, split)
         query_dir = os.path.join(output_dir, "query_data")
         support_dir = os.path.join(output_dir, "support_data")
@@ -453,7 +453,7 @@ class MultiTabDatasetGenerator:
         os.makedirs(query_dir, exist_ok=True)
         os.makedirs(support_dir, exist_ok=True)
         
-        # 生成类别组合
+        # Generate class combinations.
         combinations, combo_stats = self.sampler.generate_balanced_combinations(
             k=num_tabs,
             target_num_combinations=num_combinations,
@@ -461,21 +461,21 @@ class MultiTabDatasetGenerator:
             balance_attempts=balance_attempts
         )
         
-        # 如果启用OW模式，在每个组合的随机位置添加类别95
+        # Add class 95 at a random position in each combination if OW mode is enabled.
         if add_ow_class:
-            print(f"\n[OW模式] 在每个组合的随机位置添加类别95...")
+            print(f"\n[OW mode] Adding class 95 at a random position in each combination...")
             combinations_with_ow = []
             for combo in combinations:
                 combo_list = list(combo)
-                # 随机选择插入位置（0到len(combo_list)之间）
+                # Randomly select an insertion position between 0 and len(combo_list).
                 insert_pos = random.randint(0, len(combo_list))
                 combo_list.insert(insert_pos, 95)
                 combinations_with_ow.append(tuple(combo_list))
             combinations = combinations_with_ow
-            print(f"[OK] 已为{len(combinations)}个组合添加OW类别95")
-            print(f"     示例: {combinations[0]} (类别95在位置{list(combinations[0]).index(95)})")
+            print(f"[OK] Added OW class 95 to {len(combinations)} combinations")
+            print(f"     Example: {combinations[0]} (class 95 at position {list(combinations[0]).index(95)})")
         
-        # 保存组合列表
+        # Save combination list.
         combinations_file = os.path.join(
             self.output_root, dataset_name, f"combinations_{split}.json"
         )
@@ -485,12 +485,12 @@ class MultiTabDatasetGenerator:
                 'statistics': combo_stats,
                 'ow_enabled': add_ow_class
             }, f, indent=2)
-        print(f"[OK] 组合列表已保存: {combinations_file}")
+        print(f"[OK] Combination list saved: {combinations_file}")
         
-        # 生成样本
-        print(f"\n开始生成样本...")
+        # Generate samples.
+        print(f"\nGenerating samples...")
         query_filenames = []
-        class_sample_usage = defaultdict(set)  # 记录每个类别使用的样本
+        class_sample_usage = defaultdict(set)  # Record samples used by each class.
         generation_stats = {
             'total_samples': 0,
             'total_length': 0,
@@ -499,47 +499,47 @@ class MultiTabDatasetGenerator:
             'failed_samples': 0
         }
         
-        for combo_idx, combo in enumerate(tqdm(combinations, desc=f"生成{split}样本")):
+        for combo_idx, combo in enumerate(tqdm(combinations, desc=f"Generating {split} samples")):
             for sample_idx in range(samples_per_combo):
                 try:
-                    # 加载各类别的单标签样本（按组合顺序）
+                    # Load single-label samples for each class in combination order.
                     traces = []
                     source_files = []
                     
-                    for class_id in combo:  # 保持combo的原始顺序
+                    for class_id in combo:  # Preserve the original combo order.
                         sample = self.load_single_label_sample(class_id, split)
                         traces.append(sample)
                         source_files.append((class_id, sample['source_file'], sample['source_path']))
                     
-                    # 合并trace
+                    # Merge traces.
                     merged_trace = self.merger.merge_traces_with_overlap(traces)
                     
-                    # 验证合并结果
+                    # Validate the merge result.
                     if not self.merger.validate_merge(merged_trace, verbose=False):
-                        print(f"[WARN] 样本验证失败，跳过: combo={combo}, sample={sample_idx}")
+                        print(f"[WARN] Sample validation failed, skipping: combo={combo}, sample={sample_idx}")
                         generation_stats['failed_samples'] += 1
                         continue
                     
-                    # 生成文件名: 类别1_类别2_..._随机ID.pkl（保持顺序）
-                    labels_str = "_".join(map(str, combo))  # 不排序
+                    # Generate filename: class1_class2_..._randomID.pkl, preserving order.
+                    labels_str = "_".join(map(str, combo))  # Do not sort.
                     random_id = uuid.uuid4().hex[:8]
                     filename = f"{labels_str}_{random_id}.pkl"
                     
-                    # 保存多标签样本
+                    # Save the multi-label sample.
                     query_path = os.path.join(query_dir, filename)
                     with open(query_path, 'wb') as f:
                         pickle.dump({
                             'time': merged_trace['time'],
                             'data': merged_trace['data'],
-                            'labels': merged_trace['labels'],  # 有序的标签列表
+                            'labels': merged_trace['labels'],  # Ordered label list.
                             'metadata': merged_trace['metadata']
                         }, f)
                     
                     query_filenames.append(filename)
                     
-                    # 复制使用的单标签样本到support_data
+                    # Copy used single-label samples to support_data.
                     for class_id, source_file, source_path in source_files:
-                        # 只复制第一次使用的样本
+                        # Copy each sample only on first use.
                         if source_file not in class_sample_usage[class_id]:
                             class_support_dir = os.path.join(support_dir, str(class_id))
                             os.makedirs(class_support_dir, exist_ok=True)
@@ -550,36 +550,36 @@ class MultiTabDatasetGenerator:
                             
                             class_sample_usage[class_id].add(source_file)
                     
-                    # 统计信息
+                    # Statistics.
                     generation_stats['total_samples'] += 1
                     generation_stats['total_length'] += len(merged_trace['data'])
                     generation_stats['lengths'].append(len(merged_trace['data']))
                     generation_stats['durations'].append(merged_trace['metadata']['merged_duration'])
                     
                 except Exception as e:
-                    print(f"\n[ERROR] 生成样本失败: combo={combo}, sample={sample_idx}")
-                    print(f"   错误: {e}")
+                    print(f"\n[ERROR] Failed to generate sample: combo={combo}, sample={sample_idx}")
+                    print(f"   Error: {e}")
                     generation_stats['failed_samples'] += 1
                     continue
         
-        # 保存query文件名列表
+        # Save the query filename list.
         query_json_path = os.path.join(output_dir, f"{dataset_name}_{split}.json")
         with open(query_json_path, 'w') as f:
             json.dump(query_filenames, f, indent=2)
-        print(f"\n[OK] Query索引已保存: {query_json_path}")
+        print(f"\n[OK] Query index saved: {query_json_path}")
         
-        # 生成统计报告
+        # Generate the statistics report.
         self._generate_statistics_report(
             dataset_name, split, num_tabs, combo_stats, 
             generation_stats, class_sample_usage
         )
         
         print(f"\n{'='*60}")
-        print(f"[OK] {dataset_name}-{split}数据集生成完成!")
+        print(f"[OK] {dataset_name}-{split} dataset generation complete!")
         print(f"{'='*60}")
-        print(f"输出目录: {output_dir}")
-        print(f"总样本数: {generation_stats['total_samples']}")
-        print(f"失败样本: {generation_stats['failed_samples']}")
+        print(f"Output directory: {output_dir}")
+        print(f"Total samples: {generation_stats['total_samples']}")
+        print(f"Failed samples: {generation_stats['failed_samples']}")
         
         return output_dir
     
@@ -592,11 +592,11 @@ class MultiTabDatasetGenerator:
         generation_stats: Dict,
         class_sample_usage: Dict
     ):
-        """生成统计报告"""
-        # 计算类别在生成样本中的分布
+        """Generate the statistics report."""
+        # Calculate class distribution in generated samples.
         class_distribution = combo_stats['class_distribution']
         
-        # 计算样本长度统计
+        # Calculate sample length statistics.
         lengths = generation_stats['lengths']
         durations = generation_stats['durations']
         
@@ -605,7 +605,7 @@ class MultiTabDatasetGenerator:
             'split': split,
             'num_tabs': num_tabs,
             'target_length': 30000,
-            'preserve_order': True,  # 标识保持了顺序
+            'preserve_order': True,  # Indicates that order is preserved.
             'overlap_config': {
                 'max_overlap_ratio': float(self.overlap_range[1]),
                 'min_overlap_ratio': float(self.overlap_range[0])
@@ -638,32 +638,32 @@ class MultiTabDatasetGenerator:
             }
         }
         
-        # 保存统计报告
+        # Save the statistics report.
         stats_file = os.path.join(
             self.output_root, dataset_name, f"statistics_{split}.json"
         )
         with open(stats_file, 'w') as f:
             json.dump(statistics, f, indent=2)
         
-        print(f"\n[统计报告]:")
-        print(f"  - 样本长度: 均值={statistics['samples']['avg_length']:.0f}, "
-              f"标准差={statistics['samples']['std_length']:.0f}")
-        print(f"  - 样本时长: 均值={statistics['samples']['avg_duration']:.2f}s, "
-              f"标准差={statistics['samples']['std_duration']:.2f}s")
-        print(f"  - 使用单标签样本: {statistics['support_data']['total_unique_samples']}个")
-        print(f"  - 均衡补偿次数: {statistics['combinations']['total_balance_attempts']}")
-        print(f"[OK] 统计报告已保存: {stats_file}")
+        print(f"\n[Statistics report]:")
+        print(f"  - Sample length: mean={statistics['samples']['avg_length']:.0f}, "
+              f"std={statistics['samples']['std_length']:.0f}")
+        print(f"  - Sample duration: mean={statistics['samples']['avg_duration']:.2f}s, "
+              f"std={statistics['samples']['std_duration']:.2f}s")
+        print(f"  - Single-label samples used: {statistics['support_data']['total_unique_samples']}")
+        print(f"  - Balance compensation attempts: {statistics['combinations']['total_balance_attempts']}")
+        print(f"[OK] Statistics report saved: {stats_file}")
 
 
 def test_time_based_merger():
-    """测试时间戳合并算法"""
+    """Test the timestamp merge algorithm."""
     print("\n" + "="*60)
-    print("测试TimeBasedMerger - 时间戳合并算法")
+    print("Testing TimeBasedMerger - timestamp merge algorithm")
     print("="*60)
     
     merger = TimeBasedMerger(overlap_range=(0.0, 0.4))
     
-    # 创建3个模拟trace
+    # Create three simulated traces.
     trace1 = {
         'time': np.array([0.0, 0.5, 1.0, 1.5, 2.0]),
         'data': np.array([1, -1, 1, -1, 1]),
@@ -682,35 +682,35 @@ def test_time_based_merger():
         'label': 2
     }
     
-    # 测试1: 正常重叠
-    print("\n测试1: 正常重叠 (30%, 20%)")
+    # Test 1: normal overlap.
+    print("\nTest 1: normal overlap (30%, 20%)")
     merged = merger.merge_traces_with_overlap(
         [trace1, trace2, trace3],
         overlap_ratios=[0.3, 0.2]
     )
     
-    print(f"结果:")
-    print(f"  - 原始长度: {len(trace1['data'])}, {len(trace2['data'])}, {len(trace3['data'])}")
-    print(f"  - 合并长度: {len(merged['data'])}")
-    print(f"  - 标签顺序: {merged['labels']}")  # 注意这里是有序的
-    print(f"  - 启动时间: {merged['metadata']['start_times']}")
-    print(f"  - 总时长: {merged['metadata']['merged_duration']:.3f}s")
+    print(f"Result:")
+    print(f"  - Original lengths: {len(trace1['data'])}, {len(trace2['data'])}, {len(trace3['data'])}")
+    print(f"  - Merged length: {len(merged['data'])}")
+    print(f"  - Label order: {merged['labels']}")  # This is ordered.
+    print(f"  - Start times: {merged['metadata']['start_times']}")
+    print(f"  - Total duration: {merged['metadata']['merged_duration']:.3f}s")
     
     is_valid = merger.validate_merge(merged, verbose=True)
-    print(f"  - 验证结果: {'PASS' if is_valid else 'FAIL'}")
+    print(f"  - Validation result: {'PASS' if is_valid else 'FAIL'}")
     
-    print("\n[OK] TimeBasedMerger测试完成!")
+    print("\n[OK] TimeBasedMerger test complete!")
 
 
 def test_combination_order():
-    """测试组合顺序保持"""
+    """Test combination order preservation."""
     print("\n" + "="*60)
-    print("测试组合顺序保持")
+    print("Testing combination order preservation")
     print("="*60)
     
     sampler = CombinationSampler(num_classes=10, random_seed=42)
     
-    # 生成一些组合
+    # Generate some combinations.
     combinations, stats = sampler.generate_balanced_combinations(
         k=3,
         target_num_combinations=50,
@@ -718,21 +718,21 @@ def test_combination_order():
         balance_attempts=10
     )
     
-    # 检查是否存在顺序不同的组合
-    print("\n前10个组合（保持生成顺序）:")
+    # Check whether combinations with different orders exist.
+    print("\nFirst 10 combinations, preserving generated order:")
     for i, combo in enumerate(combinations[:10]):
         print(f"  {i+1}: {combo}")
     
-    # 验证没有被排序
+    # Verify that combinations were not sorted.
     sorted_combos = [tuple(sorted(combo)) for combo in combinations]
     identical_count = sum(1 for c1, c2 in zip(combinations, sorted_combos) if c1 == c2)
     
-    print(f"\n顺序验证:")
-    print(f"  - 总组合数: {len(combinations)}")
-    print(f"  - 与排序版本相同的组合: {identical_count}")
-    print(f"  - 保持原始顺序的比例: {(len(combinations)-identical_count)/len(combinations)*100:.1f}%")
+    print(f"\nOrder validation:")
+    print(f"  - Total combinations: {len(combinations)}")
+    print(f"  - Combinations identical to sorted version: {identical_count}")
+    print(f"  - Ratio preserving original order: {(len(combinations)-identical_count)/len(combinations)*100:.1f}%")
     
-    # 查找同样元素但顺序不同的组合对
+    # Find combination pairs with the same elements but different orders.
     element_sets = {}
     for combo in combinations:
         element_set = frozenset(combo)
@@ -740,43 +740,43 @@ def test_combination_order():
             element_sets[element_set] = []
         element_sets[element_set].append(combo)
     
-    print(f"\n相同元素但顺序不同的组合示例:")
+    print(f"\nExamples with the same elements but different orders:")
     count = 0
     for element_set, combos in element_sets.items():
         if len(combos) > 1:
-            print(f"  元素集{set(element_set)}: {combos}")
+            print(f"  Element set {set(element_set)}: {combos}")
             count += 1
-            if count >= 3:  # 只显示前3个示例
+            if count >= 3:  # Show only the first three examples.
                 break
     
     if count == 0:
-        print("  （未找到相同元素但顺序不同的组合，这是正常的）")
+        print("  No combinations with the same elements but different orders were found; this is normal.")
     
-    print("\n[OK] 组合顺序保持测试完成!")
+    print("\n[OK] Combination order preservation test complete!")
 
 
 if __name__ == "__main__":
-    # 测试时间戳合并
+    # Test timestamp merging.
     test_time_based_merger()
     
-    # 测试组合顺序保持
+    # Test combination order preservation.
     test_combination_order()
     
     print("\n" + "="*60)
-    print("改进的多标签数据集生成器已准备就绪")
+    print("Improved multi-label dataset generator is ready")
     print("="*60)
-    print("\n核心改进:")
-    print("  1. 移除sorted操作，保持组合顺序")
-    print("  2. 更频繁的均衡检查（默认每20个组合）")
-    print("  3. 增强的均衡补偿策略（每次补偿最多20个组合）")
-    print("  4. 优先选择欠代表类别，持续补偿直到达到目标")
-    print("\n使用示例:")
+    print("\nCore improvements:")
+    print("  1. Removed sorted operations to preserve combination order")
+    print("  2. More frequent balance checks, every 20 combinations by default")
+    print("  3. Stronger balance compensation, up to 20 combinations per compensation step")
+    print("  4. Prioritize underrepresented classes and keep compensating until the target is reached")
+    print("\nUsage example:")
     print("  generator = MultiTabDatasetGenerator()")
     print("  generator.generate_dataset(")
     print("      num_tabs=2,")
     print("      num_combinations=100,")
     print("      samples_per_combo=5,")
     print("      split='train',")
-    print("      check_interval=20,    # 可自定义")
-    print("      balance_attempts=20   # 可自定义")
+    print("      check_interval=20,    # customizable")
+    print("      balance_attempts=20   # customizable")
     print("  )")

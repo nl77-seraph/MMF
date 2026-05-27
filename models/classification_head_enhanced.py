@@ -20,7 +20,7 @@ class CrossClassAttention(nn.Module):
             embed_dim=feature_dim,
             num_heads=num_heads,
             dropout=dropout,
-            batch_first=True  # 输入格式: (batch, seq, feature)
+            batch_first=True  # Input format: (batch, seq, feature).
         )
         
         # Layer Normalization
@@ -32,15 +32,15 @@ class CrossClassAttention(nn.Module):
     def forward(self, x):
         """
         Args:
-            x: (batch, num_classes, feature_dim) - 每个类别的特征
+            x: (batch, num_classes, feature_dim) - features for each class.
         
         Returns:
-            增强后的特征: (batch, num_classes, feature_dim)
+            Enhanced features: (batch, num_classes, feature_dim)
         """
-        # Self-Attention: 每个类别attend to所有其他类别
+        # Self-attention: each class attends to all other classes.
         attn_out, attn_weights = self.multihead_attn(x, x, x)
         
-        # 残差连接 + LayerNorm
+        # Residual connection + LayerNorm.
         x = self.norm(x + self.dropout(attn_out))
         
         return x
@@ -48,8 +48,8 @@ class CrossClassAttention(nn.Module):
 
 class SimplifiedTopMAttention(nn.Module):
     """
-    简化的TopM注意力机制
-    保留TopM的核心思想但减少层数以降低复杂度
+    Simplified TopM attention.
+    Keeps the core TopM idea while reducing the number of layers to lower complexity.
     """
     
     def __init__(self, dim: int, num_heads: int, dropout: float, top_m: int):
@@ -110,17 +110,17 @@ class EnhancedClassificationHead(nn.Module):
         self.num_topm_layers = num_topm_layers
         self.num_cross_layers = num_cross_layers
         
-        # TopM配置 (简化版，减少层数)
+        # TopM configuration with fewer layers.
         embed_dim = feature_dim  # 256
         num_heads = 8
         dropout = 0.1
         top_m = min(20, seq_len)
         
-        # 位置编码
+        # Positional encoding.
         self.pos_embed = nn.Parameter(torch.randn(1, seq_len, embed_dim))
         trunc_normal_(self.pos_embed, std=0.02)
         
-        # 步骤1: 简化的TopM MHSA (仅1-2层)
+        # Step 1: simplified TopM MHSA with only 1-2 layers.
         self.topm_layers = nn.ModuleList([
             SimplifiedTopMAttention(embed_dim, num_heads, dropout, top_m)
             for _ in range(num_topm_layers)
@@ -134,7 +134,7 @@ class EnhancedClassificationHead(nn.Module):
             for _ in range(num_cross_layers)
         ])
         
-        # 步骤3: 增强的分类器 (每个类别独立)
+        # Step 3: enhanced classifier, independent for each class.
         self.classifier = nn.Sequential(
             nn.Linear(embed_dim, embed_dim // 2),
             nn.LayerNorm(embed_dim // 2),
@@ -144,15 +144,15 @@ class EnhancedClassificationHead(nn.Module):
             nn.LayerNorm(embed_dim // 4),
             nn.ReLU(inplace=True),
             nn.Dropout(dropout),
-            nn.Linear(embed_dim // 4, 1),  # 二分类
+            nn.Linear(embed_dim // 4, 1),  # Binary classification.
         )
 
         if is_main_process():
-            print(f"增强分类头初始化:")
-            print(f"  - 特征维度: {feature_dim}")
-            print(f"  - 类别数: {num_classes}")
-            print(f"  - TopM层数: {num_topm_layers} (简化)")
-            print(f"  - Cross-Class层数: {num_cross_layers} (核心改进)")
+            print(f"Enhanced classification head initialized:")
+            print(f"  - Feature dimension: {feature_dim}")
+            print(f"  - Number of classes: {num_classes}")
+            print(f"  - TopM layers: {num_topm_layers} (simplified)")
+            print(f"  - Cross-class layers: {num_cross_layers} (core improvement)")
 
     def forward(self, reweighted_features):
         """
@@ -168,38 +168,38 @@ class EnhancedClassificationHead(nn.Module):
     
     def forward_binary(self, reweighted_features):
         """
-        增强的二分类方法
+        Enhanced binary classification method.
         """
         batch_times_classes, feature_dim, seq_len = reweighted_features.shape
         batch_size = batch_times_classes // self.num_classes
         
-        # 步骤1: Reshape
+        # Step 1: reshape.
         # (batch*num_classes, feature_dim, seq_len) → (batch, num_classes, feature_dim, seq_len)
         features = reweighted_features.view(batch_size, self.num_classes, feature_dim, seq_len)
         
-        # 步骤2: 对每个类别单独应用TopM Attention
+        # Step 2: apply TopM attention separately for each class.
         class_features_list = []
         
         for class_idx in range(self.num_classes):
-            # 提取当前类别的特征: (batch, feature_dim, seq_len)
+            # Extract features for the current class: (batch, feature_dim, seq_len).
             class_features = features[:, class_idx, :, :]
             
-            # 转置: (batch, seq_len, feature_dim)
+            # Transpose to (batch, seq_len, feature_dim).
             class_features = class_features.transpose(1, 2)
             
-            # 添加位置编码
+            # Add positional encoding.
             class_features = class_features + self.pos_embed
             
-            # 应用简化的TopM MHSA 
+            # Apply simplified TopM MHSA.
             for i in range(self.num_topm_layers):
                 class_features = class_features + self.topm_layers[i](class_features)
                 class_features = self.topm_norms[i](class_features)
             
-            # 全局平均池化: (batch, seq_len, feature_dim) → (batch, feature_dim)
+            # Global average pooling: (batch, seq_len, feature_dim) -> (batch, feature_dim).
             pooled_features = class_features.mean(dim=1)
             class_features_list.append(pooled_features)
         
-        # 拼接所有类别特征: (batch, num_classes, feature_dim)
+        # Concatenate features for all classes: (batch, num_classes, feature_dim).
         all_class_features = torch.stack(class_features_list, dim=1)
         
         for cross_layer in self.cross_class_layers:

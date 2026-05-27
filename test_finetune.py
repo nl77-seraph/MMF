@@ -1,10 +1,10 @@
 """
-Few-shot Fine-tuning 测试脚本
+Few-shot fine-tuning test script.
 
-功能：
-- 加载训练好的模型（basetrain或finetune）
-- 仅进行一轮测试（使用val数据集）
-- 输出详细的评估指标
+Features:
+- Load a trained model from base training or fine-tuning.
+- Run a single test pass on the validation dataset.
+- Print detailed evaluation metrics.
 """
 
 import torch
@@ -27,12 +27,11 @@ from utils.metrics import MultiLabelMetrics
 from utils.metrics import sigmoid
 from utils.misc import setup_seed
 
-# GPU配置：根据实际机器修改，或通过环境变量 CUDA_VISIBLE_DEVICES 在命令行指定
-# os.environ['CUDA_VISIBLE_DEVICES'] = '0,1,2,3'
+os.environ['CUDA_VISIBLE_DEVICES'] = '4,5,6,7'
 
 
 class FewshotTestDataLoader:
-    """Few-shot测试数据加载器"""
+    """Few-shot test data loader."""
     
     def __init__(
         self,
@@ -49,12 +48,12 @@ class FewshotTestDataLoader:
         self.activated_classes = activated_classes
         self.batch_size = batch_size
         
-        print(f"FewshotTestDataLoader init:")
-        print(f"  - classes: {len(activated_classes)}")
+        print(f"\nFewshotTestDataLoader initialization:")
+        print(f"  - Number of classes: {len(activated_classes)}")
         print(f"  - shots_per_class: {shots_per_class}")
         print(f"  - batch_size: {batch_size}")
         
-        # 创建Query数据集
+        # Create the query dataset.
         self.query_dataset = QueryTrafficDataset(
             json_index_path=query_json_path,
             query_files_dir=query_files_dir,
@@ -62,7 +61,7 @@ class FewshotTestDataLoader:
             activated_classes=activated_classes
         )
         
-        # 创建Query DataLoader
+        # Create the query DataLoader.
         self.query_loader = DataLoader(
             self.query_dataset,
             batch_size=batch_size,
@@ -72,25 +71,25 @@ class FewshotTestDataLoader:
             pin_memory=True
         )
         
-        # 创建Support数据集
+        # Create the support dataset.
         self.support_dataset = SupportTrafficDataset(
             support_root_dir=support_root_dir,
             activated_classes=activated_classes,
             target_length=support_target_length,
             shots_per_class=shots_per_class,
-            random_sampling=False  # 测试时不随机采样
+            random_sampling=False  # Disable random sampling during testing.
         )
         
-        # 预加载support数据
+        # Preload support data.
         self.support_data, self.support_masks, self.class_order = \
             self.support_dataset.get_all_support_data()
         
-        print(f"  - query samples: {len(self.query_dataset)}")
-        print(f"  - support shape: {self.support_data.shape}")
-        print(f"  - batches: {len(self.query_loader)}")
+        print(f"  - Query samples: {len(self.query_dataset)}")
+        print(f"  - Support shape: {self.support_data.shape}")
+        print(f"  - Total batches: {len(self.query_loader)}")
 
     def _query_collate_fn(self, batch):
-        """Query集collate函数"""
+        """Collate function for the query set."""
         query_data_list = []
         query_labels_list = []
         metadata_list = []
@@ -106,11 +105,11 @@ class FewshotTestDataLoader:
         return batch_query_data, batch_query_labels, metadata_list
     
     def get_support_data(self):
-        """获取support数据"""
+        """Get support data."""
         return self.support_data, self.support_masks
     
     def __iter__(self):
-        """返回迭代器"""
+        """Return an iterator."""
         return FewshotTestIterator(self)
     
     def __len__(self):
@@ -118,7 +117,7 @@ class FewshotTestDataLoader:
 
 
 class FewshotTestIterator:
-    """Few-shot测试数据迭代器"""
+    """Few-shot test data iterator."""
     
     def __init__(self, dataloader: FewshotTestDataLoader):
         self.dataloader = dataloader
@@ -143,34 +142,29 @@ class FewshotTestIterator:
 
 
 class FewshotTester:
-    """Few-shot模型测试器"""
+    """Few-shot model tester."""
     
     def __init__(self, config):
         self.config = config
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         
-        # 混合精度
+        # Mixed precision.
         self.use_amp = config.get('use_amp', True)
         
-        print(f"FewshotTester init")
-        print(f"   - {self.device}")
-        print(f"  - K-shot: {config.get('k_shot', 5)}")
-        print(f"  - Tab: {config.get('tabs', '3')}")
-    
     def setup_data_loader(self):
-        """设置测试数据加载器"""
-        print("\n ...")
+        """Set up the test data loader."""
+        print("\nSetting up test data loader...")
         
-        # 获取所有类别 (base + novel)
+        # Get all classes (base + novel).
         base_classes = self.config.get('base_classes', list(range(60)))
         novel_classes = self.config.get('novel_classes', [])
         all_classes = sorted(base_classes + novel_classes)
         
         print(f"  - Base classes: {len(base_classes)}")
         print(f"  - Novel classes: {len(novel_classes)} {novel_classes}")
-        print(f"   - {len(all_classes)}")
+        print(f"  - Total classes: {len(all_classes)}")
         
-        # 测试数据加载器
+        # Test data loader.
         self.test_loader = FewshotTestDataLoader(
             query_json_path=self.config['test_query_json'],
             query_files_dir=self.config['test_query_dir'],
@@ -183,19 +177,18 @@ class FewshotTester:
             num_workers=self.config['num_workers']
         )
         
-        print(f"   : {len(self.test_loader)}")
+        print(f"  Test batches: {len(self.test_loader)}")
     
     def setup_model(self):
-        """设置模型并加载checkpoint"""
-        print("\n ...")
+        """Set up the model and load the checkpoint."""
+        print("\nSetting up model...")
         
-        # 获取类别数
+        # Get the number of classes.
         base_classes = self.config.get('base_classes', list(range(60)))
         novel_classes = self.config.get('novel_classes', [])
         num_classes = len(base_classes) + len(novel_classes)
         
-        # 创建模型
-
+        # Create the model.
         self.model = EnhancedMultiMetaFingerNet(
             num_classes=num_classes,
             dropout=self.config.get('dropout', 0.15),
@@ -203,16 +196,17 @@ class FewshotTester:
             use_se_in_df=self.config.get('use_se_in_df', False)
         ).to(self.device)
         
-        # 加载checkpoint
+        
+        # Load checkpoint.
         checkpoint_path = self.config.get('checkpoint_path')
         if not checkpoint_path or not os.path.exists(checkpoint_path):
-            raise ValueError(f"Checkpoint不存在: {checkpoint_path}")
+            raise ValueError(f"Checkpoint does not exist: {checkpoint_path}")
         
-        print(f"   checkpoint: {checkpoint_path}")
+        print(f"  Loading checkpoint: {checkpoint_path}")
         
         checkpoint = torch.load(checkpoint_path, map_location=self.device, weights_only=False)
         
-        # 处理state_dict
+        # Process state_dict.
         if 'model_state_dict' in checkpoint:
             state_dict = checkpoint['model_state_dict']
         elif 'state_dict' in checkpoint:
@@ -220,7 +214,7 @@ class FewshotTester:
         else:
             state_dict = checkpoint
         
-        # 移除module.前缀（如果有）
+        # Remove the module. prefix if present.
         new_state_dict = {}
         for k, v in state_dict.items():
             if k.startswith('module.'):
@@ -228,51 +222,52 @@ class FewshotTester:
             else:
                 new_state_dict[k] = v
         
-        # 处理类别数不匹配的情况
+        # Handle class-count mismatches.
         model_state = self.model.state_dict()
         loaded_keys = set(new_state_dict.keys())
         model_keys = set(model_state.keys())
         
-        # 找出维度不匹配的层
+        # Find layers with mismatched shapes.
         mismatched_keys = []
         for key in loaded_keys & model_keys:
             if new_state_dict[key].shape != model_state[key].shape:
                 mismatched_keys.append(key)
-                print(f"   : {key}")
+                print(f"  Warning: shape mismatch: {key}")
                 print(f"      checkpoint: {new_state_dict[key].shape}")
                 print(f"      model: {model_state[key].shape}")
         
-        # 过滤掉不匹配的键
+        # Filter out mismatched keys.
         filtered_state_dict = {
             k: v for k, v in new_state_dict.items() 
             if k not in mismatched_keys
         }
         
-        # 加载权重
+        # Load weights.
         missing_keys, unexpected_keys = self.model.load_state_dict(filtered_state_dict, strict=False)
         
-        print(f"Checkpoint")
-        print(f"      {len(filtered_state_dict)}/{len(new_state_dict)}")
+        print(f"  Checkpoint loaded")
+        print(f"     Loaded {len(filtered_state_dict)}/{len(new_state_dict)} layers")
         if mismatched_keys:
-            print(f"      {len(mismatched_keys)}")
+            print(f"     Skipped {len(mismatched_keys)} layers due to shape mismatch")
         if missing_keys:
-            print(f"     : {len(missing_keys)}")
+            print(f"     Missing keys: {len(missing_keys)}")
         if unexpected_keys:
-            print(f"     : {len(unexpected_keys)}")
+            print(f"     Unexpected keys: {len(unexpected_keys)}")
         
-        # 设置为评估模式
+        # Switch to evaluation mode.
         self.model.eval()
     
     def test(self):
-        """执行测试"""
+        """Run testing."""
         print("\n" + "="*60)
-        print(" Few-shot")
+        print("Starting few-shot model testing")
         print("="*60)
         
         test_start = time.time()
         
         all_logits = []
         all_labels = []
+
         
         with torch.no_grad():
             pbar = tqdm(self.test_loader, desc="Testing", ncols=100)
@@ -295,14 +290,18 @@ class FewshotTester:
                 
                 all_logits.append(batch_logits)
                 all_labels.append(batch_labels)
+                
+
+                
+
         
         all_logits = torch.cat(all_logits, dim=0)
         all_labels = torch.cat(all_labels, dim=0)
         
-        # 计算基础指标
+        # Compute base metrics.
         metrics = MultiLabelMetrics.compute_metrics(all_logits, all_labels, self.config)
         
-        # 计算novel classes的详细指标
+        # Compute detailed metrics for novel classes.
         base_classes = self.config.get('base_classes', list(range(60)))
         novel_classes = self.config.get('novel_classes', [])
         all_classes = sorted(base_classes + novel_classes)
@@ -317,29 +316,30 @@ class FewshotTester:
         )
         metrics['novel_metrics'] = novel_metrics
         
+  
         test_time = time.time() - test_start
         
-        # 打印结果
+        # Print results.
         print("\n" + "="*60)
-        print("-" * 60)
+        print("Test results")
         print("="*60)
-        print(f": {test_time:.2f}s")
-        print(f": {len(all_labels)}")
-        print(f": {len(self.test_loader)}")
+        print(f"Test time: {test_time:.2f}s")
+        print(f"Samples: {len(all_labels)}")
+        print(f"Batches: {len(self.test_loader)}")
         print()
         
         MultiLabelMetrics.print_metrics_summary(metrics)
         print()
         MultiLabelMetrics.print_novel_class_metrics(novel_metrics, novel_classes)
         
-        # 保存预测数据用于后续PR曲线绘制
+
         self._save_predictions(all_logits, all_labels, base_classes, novel_classes)
         
         return metrics
     
-    
+
     def _save_results(self, metrics, test_time):
-        """保存测试结果"""
+        """Save test results."""
         output_dir = self.config.get('output_dir', './test_results')
         os.makedirs(output_dir, exist_ok=True)
         
@@ -349,7 +349,25 @@ class FewshotTester:
         
         result_file = os.path.join(output_dir, f'test_results_{tabs}tab_{k_shot}shot_{timestamp}.json')
         
-        # 准备保存的数据
+        def _json_safe(obj):
+            if isinstance(obj, dict):
+                return {str(k): _json_safe(v) for k, v in obj.items()}
+            if isinstance(obj, (list, tuple)):
+                return [_json_safe(v) for v in obj]
+            if isinstance(obj, np.ndarray):
+                return obj.tolist()
+            if isinstance(obj, (np.floating, np.integer)):
+                return obj.item()
+            return obj
+
+        metric_keys = ['soft_mAP', 'sig_mAP', 'soft_roc_auc', 'sig_roc_auc', 'pk', 'mapk']
+        saved_metrics = {
+            key: float(metrics.get(key, 0.0))
+            for key in metric_keys
+        }
+        saved_metrics['novel_metrics'] = _json_safe(metrics.get('novel_metrics', {}))
+
+        # Prepare data for saving.
         results = {
             'config': {
                 'checkpoint_path': self.config.get('checkpoint_path'),
@@ -359,29 +377,16 @@ class FewshotTester:
                 'novel_classes': self.config.get('novel_classes')
             },
             'test_time': test_time,
-            'metrics': {
-                'sig_mAP': float(metrics['sig_mAP']),
-                'pk': float(metrics['pk']),
-                'novel_metrics': {
-                    'per_class_precision': {int(k): float(v) for k, v in metrics['novel_metrics']['per_class_precision'].items()},
-                    'per_class_recall': {int(k): float(v) for k, v in metrics['novel_metrics']['per_class_recall'].items()},
-                    'per_class_f1': {int(k): float(v) for k, v in metrics['novel_metrics']['per_class_f1'].items()},
-                    'avg_precision': float(metrics['novel_metrics']['avg_precision']),
-                    'avg_recall': float(metrics['novel_metrics']['avg_recall']),
-                    'avg_f1': float(metrics['novel_metrics']['avg_f1'])
-                }
-            },
+            'metrics': saved_metrics,
             'timestamp': timestamp
         }
         
         with open(result_file, 'w') as f:
             json.dump(results, f, indent=2)
         
-        print(f"\n : {result_file}")
-    
-    
+        print(f"\nResults saved to: {result_file}")
     def _save_predictions(self, logits, targets, base_classes, novel_classes):
-        """保存预测数据用于后续分析和PR曲线绘制"""
+        """Save prediction data for later analysis and PR curve plotting."""
         output_dir = self.config.get('output_dir', './test_results')
         
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -390,13 +395,13 @@ class FewshotTester:
         
         pred_file = os.path.join(output_dir, f'predictions_{tabs}tab_{k_shot}shot_{timestamp}.npz')
         
-        # 转换为numpy
+        # Convert to numpy.
         if torch.is_tensor(logits):
             logits = logits.detach().cpu().numpy()
         if torch.is_tensor(targets):
             targets = targets.detach().cpu().numpy()
         os.makedirs(os.path.dirname(pred_file), exist_ok=True)
-        # 保存数据
+        # Save data.
         np.savez_compressed(
             pred_file,
             logits=logits,
@@ -408,18 +413,16 @@ class FewshotTester:
             timestamp=timestamp
         )
         
-        print(f" : {pred_file}")
+        print(f"Prediction data saved to: {pred_file}")
         print(f"   - Logits shape: {logits.shape}")
         print(f"   - Targets shape: {targets.shape}")
         print(f"   - Base classes: {len(base_classes)}")
         print(f"   - Novel classes: {len(novel_classes)}")
-    
-
 
 def load_config(config_path):
-    """加载配置文件"""
+    """Load a config file."""
     if not os.path.exists(config_path):
-        raise ValueError(f"配置文件不存在: {config_path}")
+        raise ValueError(f"Config file does not exist: {config_path}")
     
     with open(config_path, 'r') as f:
         config = json.load(f)
@@ -429,37 +432,44 @@ def load_config(config_path):
 
 def main():
     parser = argparse.ArgumentParser(description='Few-shot Fine-tuning Test')
-    parser.add_argument('--config', type=str, required=True, help='测试配置文件路径')
+    parser.add_argument('--config', type=str, required=True, help='Path to the test config file')
     args = parser.parse_args()
     
-    # 加载配置
+    # Load config.
     config = load_config(args.config)
-    print(f" : {args.config}")
+    print(f"Config file loaded: {args.config}")
     
-    # 设置随机种子
+    # Set random seed.
     setup_seed(config.get('seed', 42))
     
-    # 创建测试器
+    # Create tester.
     tester = FewshotTester(config)
     
-    # 设置数据加载器
+    # Set up data loader.
     tester.setup_data_loader()
     
-    # 设置模型
+    # Set up model.
     tester.setup_model()
     
-    # 执行测试
+    # Run testing.
     metrics = tester.test()
     
-    print("\n")
+    print("\nTesting complete!")
+    print(f"   soft_mAP: {metrics['soft_mAP']:.4f}")
     print(f"   sig_mAP: {metrics['sig_mAP']:.4f}")
+    print(f"   soft_roc_auc: {metrics['soft_roc_auc']:.4f}")
+    print(f"   sig_roc_auc: {metrics['sig_roc_auc']:.4f}")
     print(f"   pk: {metrics['pk']:.4f}")
-    print(f"Novel Avg Precision: {metrics['novel_metrics']['avg_precision']:.4f}")
-    print(f"Novel Avg Recall: {metrics['novel_metrics']['avg_recall']:.4f}")
-    print(f"Novel Avg F1: {metrics['novel_metrics']['avg_f1']:.4f}")
+    print(f"   mapk: {metrics['mapk']:.4f}")
+    print(f"   Novel Avg Precision: {metrics['novel_metrics']['avg_precision']:.4f}")
+    print(f"   Novel Avg Recall: {metrics['novel_metrics']['avg_recall']:.4f}")
+    print(f"   Novel Avg F1: {metrics['novel_metrics']['avg_f1']:.4f}")
+    print(f"   Novel P@k: {metrics['novel_metrics'].get('novel_pk', 0.0):.4f}")
+    print(f"   Novel R@k: {metrics['novel_metrics'].get('novel_rk', 0.0):.4f}")
+    print(f"   Novel Acc@k: {metrics['novel_metrics'].get('novel_acck', 0.0):.4f}")
+    print(f"   Novel Set Precision: {metrics['novel_metrics'].get('novel_set_precision', 0.0):.4f}")
+    print(f"   Novel Set Recall: {metrics['novel_metrics'].get('novel_set_recall', 0.0):.4f}")
 
 
 if __name__ == '__main__':
     main()
-
-

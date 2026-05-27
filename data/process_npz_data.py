@@ -1,5 +1,5 @@
 """
-处理OW.npz文件，将数据重新组织为每个标签一个文件夹，每条数据一个pkl文件
+Process the OW.npz file and reorganize the data into one folder per label with one pkl file per sample.
 """
 
 import numpy as np
@@ -13,58 +13,58 @@ def process_npz(npz_path, output_dir):
 
     
     Args:
-        npz_path: npz文件路径
-        output_dir: 输出目录路径
+        npz_path: Path to the npz file.
+        output_dir: Output directory path.
     """
-    # 加载npz文件
-    print(f"正在加载 {npz_path}...")
+    # Load the npz file.
+    print(f"Loading {npz_path}...")
     data = np.load(npz_path)
     X = data['X']
     y = data['y']
     
-    print(f"数据形状: X={X.shape}, y={y.shape}")
-    print(f"数据示例: {X[0][:4]}")  # 显示第一条数据的前4个元素
+    print(f"Data shape: X={X.shape}, y={y.shape}")
+    print(f"Data example: {X[0][:4]}")  # Show the first four elements of the first sample.
     
-    # 获取唯一标签
+    # Get unique labels.
     unique_labels = np.unique(y)
-    print(f"唯一标签数量: {len(unique_labels)}")
-    print(f"标签范围: {unique_labels.min()} - {unique_labels.max()}")
+    print(f"Number of unique labels: {len(unique_labels)}")
+    print(f"Label range: {unique_labels.min()} - {unique_labels.max()}")
     
-    # 创建输出目录
+    # Create the output directory.
     os.makedirs(output_dir, exist_ok=True)
     
-    # 为每个标签创建文件夹
+    # Create one folder for each label.
     for label in unique_labels:
         label_dir = os.path.join(output_dir, str(int(label)))
         os.makedirs(label_dir, exist_ok=True)
     
-    # 处理每条数据
-    print("\n开始处理数据...")
-    for idx in tqdm(range(len(X)), desc="处理进度"):
-        # 获取当前数据
+    # Process each sample.
+    print("\nProcessing data...")
+    for idx in tqdm(range(len(X)), desc="Processing progress"):
+        # Get the current sample.
         trace = X[idx]
         label = y[idx]
         
-        # 找到非零元素（去除填充的0）
+        # Find non-zero elements and remove padded zeros.
         non_zero_mask = trace != 0
         if np.any(non_zero_mask):
             trace = trace[non_zero_mask]
         else:
-            # 如果全是零，跳过这条数据
+            # Skip samples that contain only zeros.
             continue
         
-        # 提取时间戳和方向序列
-        X_dir = np.sign(trace)  # 方向序列（正负信息）
-        X_time = np.abs(trace)  # 时间戳信息（绝对值）
+        # Extract timestamp and direction sequences.
+        X_dir = np.sign(trace)  # Direction sequence with sign information.
+        X_time = np.abs(trace)  # Timestamp information as absolute values.
         
-        # 创建数据字典，格式与你的读取代码兼容
+        # Create a data dictionary compatible with the reading code.
         data_dict = {
-            'time': X_time,      # 时间戳数组
-            'data': X_dir,       # 方向序列数组
-            'label': int(label)  # 标签
+            'time': X_time,      # Timestamp array.
+            'data': X_dir,       # Direction sequence array.
+            'label': int(label)  # Label.
         }
         
-        # 保存为pkl文件
+        # Save as a pkl file.
         label_dir = os.path.join(output_dir, str(int(label)))
         file_name = f"trace_{idx}.pkl"
         file_path = os.path.join(label_dir, file_name)
@@ -72,27 +72,27 @@ def process_npz(npz_path, output_dir):
         with open(file_path, 'wb') as f:
             pickle.dump(data_dict, f)
     
-    print(f"\n处理完成！共处理 {len(X)} 条数据")
+    print(f"\nProcessing complete. Processed {len(X)} samples")
     
-    # 统计每个标签的数据数量
-    print("\n每个标签的数据统计:")
+    # Count samples for each label.
+    print("\nSample statistics per label:")
     for label in unique_labels:
         label_dir = os.path.join(output_dir, str(int(label)))
         if os.path.exists(label_dir):
             count = len([f for f in os.listdir(label_dir) if f.endswith('.pkl')])
-            print(f"标签 {int(label)}: {count} 条数据")
+            print(f"Label {int(label)}: {count} samples")
 
 def verify_pkl_files(output_dir, num_samples=3):
     """
-    验证生成的pkl文件格式
+    Verify the format of generated pkl files.
     
     Args:
-        output_dir: 输出目录路径
-        num_samples: 要验证的样本数量
+        output_dir: Output directory path.
+        num_samples: Number of samples to verify.
     """
-    print("\n验证生成的pkl文件...")
+    print("\nVerifying generated pkl files...")
     
-    # 获取所有标签文件夹
+    # Get all label folders.
     label_dirs = [d for d in os.listdir(output_dir) if os.path.isdir(os.path.join(output_dir, d))]
     
     for label_dir in label_dirs[:min(num_samples, len(label_dirs))]:
@@ -100,11 +100,11 @@ def verify_pkl_files(output_dir, num_samples=3):
         pkl_files = [f for f in os.listdir(label_path) if f.endswith('.pkl')]
         
         if pkl_files:
-            # 读取第一个pkl文件进行验证
+            # Read the first pkl file for verification.
             test_file = os.path.join(label_path, pkl_files[0])
-            print(f"\n验证文件: {test_file}")
+            print(f"\nVerifying file: {test_file}")
             
-            # 使用你提供的读取方式
+            # Use the provided reading method.
             with open(test_file, 'rb') as f:
                 raw_dict = pickle.load(f)
             
@@ -112,28 +112,28 @@ def verify_pkl_files(output_dir, num_samples=3):
             raw_datas = raw_dict['data']
             raw_labels = raw_dict['label']
             
-            print(f"  标签: {raw_labels}")
-            print(f"  时间戳数量: {len(raw_times)}")
-            print(f"  方向序列数量: {len(raw_datas)}")
-            print(f"  时间戳示例: {raw_times[:5] if len(raw_times) >= 5 else raw_times}")
-            print(f"  方向序列示例: {raw_datas[:5] if len(raw_datas) >= 5 else raw_datas}")
-            print(f"  数据长度一致性检查: {len(raw_times) == len(raw_datas)}")
+            print(f"  Label: {raw_labels}")
+            print(f"  Timestamp count: {len(raw_times)}")
+            print(f"  Direction sequence count: {len(raw_datas)}")
+            print(f"  Timestamp example: {raw_times[:5] if len(raw_times) >= 5 else raw_times}")
+            print(f"  Direction sequence example: {raw_datas[:5] if len(raw_datas) >= 5 else raw_datas}")
+            print(f"  Data length consistency check: {len(raw_times) == len(raw_datas)}")
 
 def main():
-    parser = argparse.ArgumentParser(description='处理OW.npz数据文件')
+    parser = argparse.ArgumentParser(description='Process OW.npz data files')
     parser.add_argument('--npz_path', type=str, default='/root/datasets/OW.npz', 
-                        help='npz文件路径')
+                        help='Path to the npz file')
     parser.add_argument('--output_dir', type=str, default='/root/datasets/OW', 
-                        help='输出目录路径')
+                        help='Output directory path')
     parser.add_argument('--verify', action='store_true', 
-                        help='是否验证生成的文件')
+                        help='Whether to verify generated files')
     
     args = parser.parse_args()
     
-    # 处理数据
+    # Process data.
     process_npz(args.npz_path, args.output_dir)
     
-    # 验证文件
+    # Verify files.
     if args.verify:
         verify_pkl_files(args.output_dir)
 

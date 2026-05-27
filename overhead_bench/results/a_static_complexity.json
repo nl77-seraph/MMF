@@ -1,0 +1,236 @@
+{
+  "phase": "A_static_complexity",
+  "smoke": false,
+  "gpu_info": {
+    "available": true,
+    "logical_index": 0,
+    "name": "NVIDIA A100 80GB PCIe",
+    "total_memory_MiB": 81037.8,
+    "multi_processor_count": 108,
+    "cuda_capability": "8.0",
+    "torch_version": "2.4.1",
+    "cudnn_version": 90100
+  },
+  "A1_params_by_N": {
+    "5": {
+      "feature_extractor": 1054400,
+      "meta_learnet": 1332929,
+      "feature_reweighting": 0,
+      "classification_head": 1116801,
+      "total": 3504130,
+      "__full_net_check": 3504130
+    },
+    "10": {
+      "feature_extractor": 1054400,
+      "meta_learnet": 1332929,
+      "feature_reweighting": 0,
+      "classification_head": 1116801,
+      "total": 3504130,
+      "__full_net_check": 3504130
+    },
+    "30": {
+      "feature_extractor": 1054400,
+      "meta_learnet": 1332929,
+      "feature_reweighting": 0,
+      "classification_head": 1116801,
+      "total": 3504130,
+      "__full_net_check": 3504130
+    },
+    "60": {
+      "feature_extractor": 1054400,
+      "meta_learnet": 1332929,
+      "feature_reweighting": 0,
+      "classification_head": 1116801,
+      "total": 3504130,
+      "__full_net_check": 3504130
+    },
+    "90": {
+      "feature_extractor": 1054400,
+      "meta_learnet": 1332929,
+      "feature_reweighting": 0,
+      "classification_head": 1116801,
+      "total": 3504130,
+      "__full_net_check": 3504130
+    },
+    "95": {
+      "feature_extractor": 1054400,
+      "meta_learnet": 1332929,
+      "feature_reweighting": 0,
+      "classification_head": 1116801,
+      "total": 3504130,
+      "__full_net_check": 3504130
+    }
+  },
+  "A2_flops_by_N": [
+    {
+      "num_classes": 5,
+      "batch_size": 1,
+      "K_shot": 1,
+      "L_query": 20000,
+      "L_support": 10000,
+      "L_prime_backbone_out": 80,
+      "feature_extractor_macs_thop": {
+        "macs": 920225632,
+        "params": 1054400
+      },
+      "meta_learnet_macs_thop": {
+        "macs": 2320725120,
+        "params": 1316416
+      },
+      "feature_reweighting_macs_analytic": 102400,
+      "classification_head_macs_analytic": {
+        "topm_self_attn": 242483200,
+        "cross_class_attn": 2647040,
+        "mlp_classifier": 205120,
+        "head_total": 245335360
+      },
+      "total_macs_estimate": 3486388512,
+      "total_gflops_2x_macs": 6.973
+    },
+    {
+      "num_classes": 10,
+      "batch_size": 1,
+      "K_shot": 1,
+      "L_query": 20000,
+      "L_support": 10000,
+      "L_prime_backbone_out": 80,
+      "feature_extractor_macs_thop": {
+        "macs": 920225632,
+        "params": 1054400
+      },
+      "meta_learnet_macs_thop": {
+        "macs": 4641450240,
+        "params": 1316416
+      },
+      "feature_reweighting_macs_analytic": 204800,
+      "classification_head_macs_analytic": {
+        "topm_self_attn": 484966400,
+        "cross_class_attn": 5345280,
+        "mlp_classifier": 410240,
+        "head_total": 490721920
+      },
+      "total_macs_estimate": 6052602592,
+      "total_gflops_2x_macs": 12.105
+    },
+    {
+      "num_classes": 30,
+      "batch_size": 1,
+      "K_shot": 1,
+      "L_query": 20000,
+      "L_support": 10000,
+      "L_prime_backbone_out": 80,
+      "feature_extractor_macs_thop": {
+        "macs": 920225632,
+        "params": 1054400
+      },
+      "meta_learnet_macs_thop": {
+        "macs": 13924350720,
+        "params": 1316416
+      },
+      "feature_reweighting_macs_analytic": 614400,
+      "classification_head_macs_analytic": {
+        "topm_self_attn": 1454899200,
+        "cross_class_attn": 16650240,
+        "mlp_classifier": 1230720,
+        "head_total": 1472780160
+      },
+      "total_macs_estimate": 16317970912,
+      "total_gflops_2x_macs": 32.636
+    },
+    {
+      "num_classes": 60,
+      "batch_size": 1,
+      "K_shot": 1,
+      "L_query": 20000,
+      "L_support": 10000,
+      "L_prime_backbone_out": 80,
+      "feature_extractor_macs_thop": {
+        "macs": 920225632,
+        "params": 1054400
+      },
+      "meta_learnet_macs_thop": {
+        "macs": 27848701440,
+        "params": 1316416
+      },
+      "feature_reweighting_macs_analytic": 1228800,
+      "classification_head_macs_analytic": {
+        "topm_self_attn": 2909798400,
+        "cross_class_attn": 35143680,
+        "mlp_classifier": 2461440,
+        "head_total": 2947403520
+      },
+      "total_macs_estimate": 31717559392,
+      "total_gflops_2x_macs": 63.435
+    },
+    {
+      "num_classes": 90,
+      "batch_size": 1,
+      "K_shot": 1,
+      "L_query": 20000,
+      "L_support": 10000,
+      "L_prime_backbone_out": 80,
+      "feature_extractor_macs_thop": {
+        "macs": 920225632,
+        "params": 1054400
+      },
+      "meta_learnet_macs_thop": {
+        "macs": 41773052160,
+        "params": 1316416
+      },
+      "feature_reweighting_macs_analytic": 1843200,
+      "classification_head_macs_analytic": {
+        "topm_self_attn": 4364697600,
+        "cross_class_attn": 55480320,
+        "mlp_classifier": 3692160,
+        "head_total": 4423870080
+      },
+      "total_macs_estimate": 47118991072,
+      "total_gflops_2x_macs": 94.238
+    },
+    {
+      "num_classes": 95,
+      "batch_size": 1,
+      "K_shot": 1,
+      "L_query": 20000,
+      "L_support": 10000,
+      "L_prime_backbone_out": 80,
+      "feature_extractor_macs_thop": {
+        "macs": 920225632,
+        "params": 1054400
+      },
+      "meta_learnet_macs_thop": {
+        "macs": 44093777280,
+        "params": 1316416
+      },
+      "feature_reweighting_macs_analytic": 1945600,
+      "classification_head_macs_analytic": {
+        "topm_self_attn": 4607180800,
+        "cross_class_attn": 59048960,
+        "mlp_classifier": 3897280,
+        "head_total": 4670127040
+      },
+      "total_macs_estimate": 49686075552,
+      "total_gflops_2x_macs": 99.372
+    }
+  ],
+  "A3_checkpoint_size": {
+    "num_classes": 90,
+    "fp32_path": "/root/works/MMF-1029-simple/overhead_bench/artifacts/ckpt_fp32_N90.pth",
+    "fp32_MiB": 13.4424,
+    "fp16_path": "/root/works/MMF-1029-simple/overhead_bench/artifacts/ckpt_fp16_N90.pth",
+    "fp16_MiB": 6.7424,
+    "reweighting_bank_MiB_fp32": 0.0879,
+    "reweighting_bank_MiB_fp16": 0.0439
+  },
+  "A4_big_O_formula": "Per-query MACs ≈ Θ(L·C0·k) + N·K·Θ(L_s·C0·k) + Θ(N·C·L')   # dynamic reweighting (1×1 depthwise) + Θ(N·T·(L'·C^2 + L'^2·C))                 # Top-m self-attn, T=num_topm_layers + Θ(X·(N·C^2 + N^2·C))                     # Cross-class MHSA, X=num_cross_layers + Θ(N·C^2).                                 # Per-class MLP\nDominant scaling terms: (i) Top-m self-attn is the main linear-in-N term, (ii) Cross-class MHSA is the only quadratic-in-N term. When W_c is cached, the meta_learnet term (N·K·Θ(L_s·C0·k)) drops to zero at inference.",
+  "constants": {
+    "L_query": 20000,
+    "L_support": 10000,
+    "L_prime": 80,
+    "C_main": 256,
+    "num_heads": 8,
+    "num_topm_layers": 2,
+    "num_cross_layers": 2,
+    "K_shot_static_measurement": 1
+  }
+}

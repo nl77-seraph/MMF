@@ -6,19 +6,19 @@ from typing import Tuple, Dict, List
 import sys
 import os
 
-# 添加路径以导入自定义模块
+# Add the path for importing local modules.
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from meta_traffic_dataset import QueryTrafficDataset, SupportTrafficDataset
 
 import torch.distributed as dist
 def is_main_process():
-    """检查是否为主进程"""
+    """Check whether this is the main process."""
     return not dist.is_initialized() or dist.get_rank() == 0
 
 class MetaTrafficDataLoader:
     """
-    Meta学习数据加载器
-    结合查询集和支持集，输出格式与MultiMetaFingerNet.forward()完全兼容
+    Data loader for meta-learning.
+    Combines query and support sets with an output format fully compatible with MultiMetaFingerNet.forward().
     """
     
     def __init__(self,
@@ -35,16 +35,16 @@ class MetaTrafficDataLoader:
                  random_sampling: bool = False):
         """
         Args:
-            query_json_path: 查询集索引JSON文件路径
-            query_files_dir: 查询集数据文件目录
-            support_root_dir: 支持集根目录
-            activated_classes: 激活的类别列表，默认0-59
-            target_length: 目标序列长度
-            shots_per_class: 每个类别的支持样本数
-            batch_size: 批大小
-            shuffle: 是否打乱
-            num_workers: 数据加载进程数
-            random_sampling: 是否使用随机采样模式（用于训练）
+            query_json_path: Path to the query set index JSON file.
+            query_files_dir: Directory containing query data files.
+            support_root_dir: Root directory of the support set.
+            activated_classes: List of active classes; defaults to 0-59.
+            target_length: Target sequence length.
+            shots_per_class: Number of support samples per class.
+            batch_size: Batch size.
+            shuffle: Whether to shuffle the query dataset.
+            num_workers: Number of data loading workers.
+            random_sampling: Whether to use random sampling mode for training.
         """
         self.activated_classes = activated_classes if activated_classes else list(range(60))  # 0-59
         self.support_target_length = support_target_length
@@ -53,13 +53,13 @@ class MetaTrafficDataLoader:
         self.batch_size = batch_size
         self.random_sampling = random_sampling
         if is_main_process():
-            print(f"MetaTrafficDataLoader初始化...")
-            print(f"  - 激活类别: {len(self.activated_classes)}个 (0-{max(self.activated_classes)})")
-            print(f"  - 每类样本数: {shots_per_class}")
-            print(f"  - 批大小: {batch_size}")
-            print(f"  - 随机采样: {random_sampling}")
+            print(f"Initializing MetaTrafficDataLoader...")
+            print(f"  - Active classes: {len(self.activated_classes)} (0-{max(self.activated_classes)})")
+            print(f"  - Samples per class: {shots_per_class}")
+            print(f"  - Batch size: {batch_size}")
+            print(f"  - Random sampling: {random_sampling}")
         
-        # 初始化查询集数据集
+        # Initialize the query dataset.
         self.query_dataset = QueryTrafficDataset(
             json_index_path=query_json_path,
             query_files_dir=query_files_dir,
@@ -67,7 +67,7 @@ class MetaTrafficDataLoader:
             activated_classes=self.activated_classes
         )
         
-        # 初始化支持集数据集
+        # Initialize the support dataset.
         self.support_dataset = SupportTrafficDataset(
             support_root_dir=support_root_dir,
             activated_classes=self.activated_classes,
@@ -76,7 +76,7 @@ class MetaTrafficDataLoader:
             random_sampling=random_sampling
         )
         
-        # 创建查询集DataLoader
+        # Create the query DataLoader.
         self.query_loader = DataLoader(
             self.query_dataset,
             batch_size=batch_size,
@@ -86,21 +86,21 @@ class MetaTrafficDataLoader:
         )
         
         if not self.random_sampling:
-            # 固定采样模式：预加载所有支持集数据
+            # Fixed sampling mode: preload all support set data.
             self.support_data, self.support_masks, self.class_order = self.support_dataset.get_all_support_data()
             if is_main_process():
-                print(f"  - 支持集形状: {self.support_data.shape}")
+                print(f"  - Support set shape: {self.support_data.shape}")
         else:
-            # 随机采样模式：每次迭代时动态生成支持集
+            # Random sampling mode: generate the support set dynamically on each iteration.
             self.class_order = sorted(self.activated_classes)
             if is_main_process():
-                print(f"  - 支持集: 动态随机采样模式")
+                print(f"  - Support set: dynamic random sampling mode")
         if is_main_process():
-            print(f"  - 查询集样本数: {len(self.query_dataset)}")
-            print(f"  - 数据加载器初始化完成！")
+            print(f"  - Query samples: {len(self.query_dataset)}")
+            print(f"  - Data loader initialization complete!")
     
     def _query_collate_fn(self, batch):
-        """查询集的collate函数"""
+        """Collate function for the query set."""
         query_data_list = []
         query_labels_list = []
         metadata_list = []
@@ -110,7 +110,7 @@ class MetaTrafficDataLoader:
             query_labels_list.append(query_labels)
             metadata_list.append(metadata)
         
-        # 堆叠成batch
+        # Stack into a batch.
         batch_query_data = torch.stack(query_data_list)  # (batch_size, target_length)
         batch_query_labels = torch.stack(query_labels_list)  # (batch_size, num_classes)
         
@@ -118,33 +118,33 @@ class MetaTrafficDataLoader:
     
     def get_support_data(self) -> Tuple[torch.Tensor, torch.Tensor]:
         """
-        获取支持集数据
+        Get support set data.
         
         Returns:
             support_data: (num_classes, shots_per_class, target_length)
             support_masks: (num_classes, shots_per_class, target_length)
         """
         if self.random_sampling:
-            # 随机采样模式：每次调用都生成新的随机样本
+            # Random sampling mode: generate new random samples on each call.
             support_data, support_masks, _ = self.support_dataset.get_all_support_data()
             return support_data, support_masks
         else:
-            # 固定采样模式：返回预加载的数据
+            # Fixed sampling mode: return preloaded data.
             return self.support_data, self.support_masks
     
     def __iter__(self):
-        """返回数据迭代器"""
+        """Return the data iterator."""
         return MetaTrafficIterator(self)
     
     def __len__(self):
-        """返回batch数量"""
+        """Return the number of batches."""
         return len(self.query_loader)
 
 
 class MetaTrafficIterator:
     """
-    Meta Traffic数据迭代器
-    输出格式完全兼容MultiMetaFingerNet.forward()
+    Meta traffic data iterator.
+    The output format is fully compatible with MultiMetaFingerNet.forward().
     """
     
     def __init__(self, dataloader: MetaTrafficDataLoader):
@@ -157,19 +157,19 @@ class MetaTrafficIterator:
     
     def __next__(self) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, Dict]:
         """
-        返回下一个batch，格式兼容MultiMetaFingerNet
+        Return the next batch in a format compatible with MultiMetaFingerNet.
         
         Returns:
-            query_data: (batch_size, target_length) 查询集数据
-            support_data: (num_classes, shots_per_class, target_length) 支持集数据
-            support_masks: (num_classes, shots_per_class, target_length) 支持集mask
-            batch_info: Dict 包含查询标签和元数据
+            query_data: (batch_size, target_length) Query set data.
+            support_data: (num_classes, shots_per_class, target_length) Support set data.
+            support_masks: (num_classes, shots_per_class, target_length) Support set masks.
+            batch_info: Dict containing query labels and metadata.
         """
         try:
-            # 获取查询集batch
+            # Get a query batch.
             query_data, query_labels, metadata = next(self.query_iter)
             #self.support_data, self.support_masks = self.dataloader.get_support_data()
-            # 组织batch信息
+            # Organize batch information.
             batch_info = {
                 'query_labels': query_labels,  # (batch_size, num_classes)
                 'metadata': metadata,
@@ -183,75 +183,3 @@ class MetaTrafficIterator:
             raise StopIteration
 
 
-def test_meta_dataloader():
-    """测试整合的数据加载器"""
-    print("="*60)
-    print("测试MetaTrafficDataLoader")
-    print("="*60)
-    
-    # 设置路径
-    query_json_path = "/home/ubuntu22/multi-tab-work/meta-finger/data/3tab_task/3tab_train.json"
-    query_files_dir = "/home/ubuntu22/multi-tab-work/meta-finger/data/3tab_task/3tab_files"
-    support_root_dir = "/home/ubuntu22/multi-tab-work/meta-finger/data/3tab_task/CW_single_tab/train"
-    
-    # 检查路径
-    paths_to_check = [query_json_path, query_files_dir, support_root_dir]
-    for path in paths_to_check:
-        if os.path.exists(path):
-            print(f"路径存在: {path}")
-        else:
-            print(f"路径不存在: {path}")
-    
-    if not all(os.path.exists(p) for p in paths_to_check):
-        print("\n数据路径不存在，跳过测试")
-        return
-    
-    try:
-        # 创建数据加载器
-        print(f"\n创建MetaTrafficDataLoader...")
-        dataloader = MetaTrafficDataLoader(
-            query_json_path=query_json_path,
-            query_files_dir=query_files_dir,
-            support_root_dir=support_root_dir,
-            activated_classes=list(range(60)),  # 0-59
-            target_length=30000,
-            shots_per_class=1,
-            batch_size=4,
-            shuffle=True,
-            num_workers=0
-        )
-        
-        print(f"\n 测试数据格式兼容性...")
-        # 测试几个batch
-        for i, (query_data, support_data, support_masks, batch_info) in enumerate(dataloader):
-            print(f"\nBatch {i+1}:")
-
-            print(f"  查询集数据: {query_data.shape}")
-            print(f"  查询集标签: {batch_info['query_labels'].shape}")
-            print(f"  支持集数据: {support_data.shape}")
-            print(f"  支持集掩码: {support_masks.shape}")
-            print(f"  类别数量: {batch_info['num_classes']}")
-            print(f"  标签和: {batch_info['query_labels']}")
-            #print(f"  支持集数据: {support_data[0,0,:100]}")
-
-            # 测试与MultiMetaFingerNet的兼容性
-            print(f"\n🔧 MultiMetaFingerNet兼容性检查:")
-            print(f"  query_data形状: {query_data.shape} ← 应为(batch_size, 30000)")
-            print(f"  support_data形状: {support_data.shape} ← 应为(num_classes, shots, 30000)")
-            print(f"  support_masks形状: {support_masks.shape} ← 应为(num_classes, shots, 30000)")
-            
-            # 只测试前2个batch
-            if i >= 1:
-                break
-        
-        print(f"\nMetaTrafficDataLoader测试完成！")
-        print(f"数据格式完全兼容MultiMetaFingerNet.forward()接口")
-        
-    except Exception as e:
-        print(f"\n 测试出现错误: {e}")
-        import traceback
-        traceback.print_exc()
-
-
-if __name__ == "__main__":
-    test_meta_dataloader() 

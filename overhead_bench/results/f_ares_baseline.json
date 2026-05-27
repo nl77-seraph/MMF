@@ -1,0 +1,111 @@
+{
+  "phase": "F_ARES_baseline_one_vs_all",
+  "smoke": false,
+  "gpu_info": {
+    "available": true,
+    "logical_index": 0,
+    "name": "NVIDIA A100 80GB PCIe",
+    "total_memory_MiB": 81037.8,
+    "multi_processor_count": 108,
+    "cuda_capability": "8.0",
+    "torch_version": "2.4.1",
+    "cudnn_version": 90100
+  },
+  "cpu_mem_before": {
+    "rss_MiB": 743.63,
+    "vms_MiB": 18393.85
+  },
+  "cpu_mem_after": {
+    "rss_MiB": 1234.21,
+    "vms_MiB": 20847.69
+  },
+  "config": {
+    "num_monitored": 95,
+    "N_sweep": [
+      5,
+      10,
+      30,
+      95
+    ],
+    "seq_len": 10000,
+    "max_len": 32,
+    "num_samples_per_model": 256,
+    "batch_size": 64,
+    "lr": 0.0014,
+    "weight_decay": 0.005,
+    "formulation": "one-vs-all; N independent binary Trans-WF classifiers (ARES paper Sec IV.A)"
+  },
+  "training": {
+    "num_monitored": 95,
+    "num_samples_per_model": 256,
+    "batch_size": 64,
+    "per_model_params": 2544929,
+    "total_params_all_models": 241768255,
+    "total_saved_MiB": 926.117,
+    "avg_per_model_ckpt_MiB": 9.7486,
+    "train_wallclock_seconds": 12.415,
+    "per_model_train_seconds_mean": 0.0807,
+    "peak_gpu_mem_during_training": {
+      "allocated_MiB": 1005.01,
+      "reserved_MiB": 1612.0
+    }
+  },
+  "inference_scalability": [
+    {
+      "N": 5,
+      "latency_ms": {
+        "mean_ms": 12.6915,
+        "std_ms": 0.1063,
+        "min_ms": 12.5307,
+        "max_ms": 12.8819,
+        "n_iter": 10
+      },
+      "peak_gpu_mem": {
+        "allocated_MiB": 963.32,
+        "reserved_MiB": 2344.0
+      }
+    },
+    {
+      "N": 10,
+      "latency_ms": {
+        "mean_ms": 25.8202,
+        "std_ms": 0.6213,
+        "min_ms": 25.1955,
+        "max_ms": 27.0223,
+        "n_iter": 10
+      },
+      "peak_gpu_mem": {
+        "allocated_MiB": 963.32,
+        "reserved_MiB": 978.0
+      }
+    },
+    {
+      "N": 30,
+      "latency_ms": {
+        "mean_ms": 80.4004,
+        "std_ms": 5.3272,
+        "min_ms": 75.6347,
+        "max_ms": 92.0218,
+        "n_iter": 10
+      },
+      "peak_gpu_mem": {
+        "allocated_MiB": 963.33,
+        "reserved_MiB": 978.0
+      }
+    },
+    {
+      "N": 95,
+      "latency_ms": {
+        "mean_ms": 245.974,
+        "std_ms": 3.2805,
+        "min_ms": 243.1672,
+        "max_ms": 252.8901,
+        "n_iter": 10
+      },
+      "peak_gpu_mem": {
+        "allocated_MiB": 963.36,
+        "reserved_MiB": 978.0
+      }
+    }
+  ]
+}

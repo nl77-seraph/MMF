@@ -1,7 +1,7 @@
 """
-增强的特征提取器 - 混合方案C
-基于DF网络，增加SE注意力、Shot Attention等机制
-目标: 将mAP从0.9+提升到0.95+
+Enhanced feature extractor for hybrid scheme C.
+Based on the DF network, with SE attention, shot attention, and related mechanisms.
+Goal: improve mAP from 0.9+ to 0.95+.
 """
 
 import torch
@@ -20,8 +20,8 @@ import torch.distributed as dist
 
 class SEBlock(nn.Module):
     """
-    Squeeze-and-Excitation Block (通道注意力)
-    用于增强重要通道，抑制不重要通道
+    Squeeze-and-Excitation block for channel attention.
+    Enhances important channels and suppresses less useful channels.
     """
     
     def __init__(self, channels: int, reduction: int = 16):
@@ -39,26 +39,26 @@ class SEBlock(nn.Module):
         Args:
             x: (batch, channels, length)
         Returns:
-            重加权后的特征
+            Reweighted features.
         """
         b, c, _ = x.size()
-        # Squeeze: 全局平均池化
+        # Squeeze: global average pooling.
         y = self.squeeze(x).view(b, c)
-        # Excitation: 学习通道权重
+        # Excitation: learn channel weights.
         y = self.excitation(y).view(b, c, 1)
-        # Scale: 重加权
+        # Scale: reweight.
         return x * y.expand_as(x)
 
 
 class ShotAttentionFusion(nn.Module):
     """
-    Shot-level Attention融合模块
-    对每个类别的多个shot进行加权融合，而非简单mean
+    Shot-level attention fusion module.
+    Uses weighted fusion over multiple shots for each class instead of a simple mean.
     """
     
     def __init__(self, feature_dim: int):
         super(ShotAttentionFusion, self).__init__()
-        # 注意力网络
+        # Attention network.
         self.attention = nn.Sequential(
             nn.Linear(feature_dim, feature_dim // 4),
             nn.ReLU(inplace=True),
@@ -68,25 +68,25 @@ class ShotAttentionFusion(nn.Module):
     def forward(self, x):
         """
         Args:
-            x: (num_classes, shots, feature_dim) 或 (num_classes, shots, channels, seq_len)
+            x: (num_classes, shots, feature_dim) or (num_classes, shots, channels, seq_len)
         Returns:
-            融合后的特征: (num_classes, feature_dim) 或 (num_classes, channels, seq_len)
+            Fused features: (num_classes, feature_dim) or (num_classes, channels, seq_len)
         """
         if len(x.shape) == 3:
             # Case 1: (num_classes, shots, feature_dim)
             attn_scores = self.attention(x)  # (num_classes, shots, 1)
-            attn_weights = F.softmax(attn_scores, dim=1)  # 在shot维度softmax
+            attn_weights = F.softmax(attn_scores, dim=1)  # Softmax over the shot dimension.
             weighted_features = (x * attn_weights).sum(dim=1)  # (num_classes, feature_dim)
             return weighted_features
         elif len(x.shape) == 4:
             # Case 2: (num_classes, shots, channels, seq_len)
             num_classes, shots, channels, seq_len = x.shape
-            # 先进行全局池化得到每个shot的特征向量
+            # Apply global pooling first to get a feature vector for each shot.
             pooled = x.mean(dim=-1)  # (num_classes, shots, channels)
-            # 计算注意力权重
+            # Compute attention weights.
             attn_scores = self.attention(pooled)  # (num_classes, shots, 1)
             attn_weights = F.softmax(attn_scores, dim=1)  # (num_classes, shots, 1)
-            # 扩展权重并加权融合
+            # Expand weights and apply weighted fusion.
             attn_weights = attn_weights.unsqueeze(-1)  # (num_classes, shots, 1, 1)
             weighted_features = (x * attn_weights).sum(dim=1)  # (num_classes, channels, seq_len)
             return weighted_features
@@ -95,7 +95,7 @@ class ShotAttentionFusion(nn.Module):
 
 
 class DFBlock(nn.Module):
-    """DF网络的单个Block (与原版相同)"""
+    """Single DF network block, identical to the original version."""
     
     def __init__(self, in_channels: int, out_channels: int, 
                  kernel_size: int = 8, pool_size: int = 8, 
@@ -103,7 +103,7 @@ class DFBlock(nn.Module):
                  activation: str = 'relu', use_se: bool = False):
         super(DFBlock, self).__init__()
         
-        # 第一个卷积层
+        # First convolution layer.
         self.conv1 = nn.Conv1d(in_channels=in_channels, 
                               out_channels=out_channels,
                               kernel_size=kernel_size,
@@ -111,7 +111,7 @@ class DFBlock(nn.Module):
                               padding=kernel_size // 2)
         self.bn1 = nn.BatchNorm1d(num_features=out_channels)
         
-        # 第二个卷积层
+        # Second convolution layer.
         self.conv2 = nn.Conv1d(in_channels=out_channels, 
                               out_channels=out_channels, 
                               kernel_size=kernel_size,
@@ -119,13 +119,13 @@ class DFBlock(nn.Module):
                               padding=kernel_size // 2)
         self.bn2 = nn.BatchNorm1d(num_features=out_channels)
         
-        # 池化和dropout
+        # Pooling and dropout.
         self.pool = nn.MaxPool1d(kernel_size=pool_size, 
                                 stride=pool_stride, 
                                 padding=pool_size // 2)
         self.dropout = nn.Dropout(p=dropout)
         
-        # 激活函数
+        # Activation functions.
         if activation == 'elu':
             self.activation1 = nn.ELU(alpha=1.0)
             self.activation2 = nn.ELU(alpha=1.0)
@@ -133,27 +133,27 @@ class DFBlock(nn.Module):
             self.activation1 = nn.ReLU()
             self.activation2 = nn.ReLU()
         
-        # 可选的SE Block
+        # Optional SE block.
         self.use_se = use_se
         if use_se:
             self.se = SEBlock(out_channels, reduction=16)
     
     def forward(self, x):
-        # 第一个卷积块
+        # First convolution block.
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.activation1(x)
         
-        # 第二个卷积块
+        # Second convolution block.
         x = self.conv2(x)
         x = self.bn2(x)
         x = self.activation2(x)
         
-        # 可选的SE注意力
+        # Optional SE attention.
         if self.use_se:
             x = self.se(x)
         
-        # 池化和dropout
+        # Pooling and dropout.
         x = self.pool(x)
         x = self.dropout(x)
         
@@ -161,19 +161,19 @@ class DFBlock(nn.Module):
 
 
 class DFFeatureExtractor(nn.Module):
-    """基于DF网络的特征提取器 (可选增强版)"""
+    """Feature extractor based on the DF network, with optional enhancements."""
     
     def __init__(self, dropout: float = 0.5, use_se: bool = False):
         super(DFFeatureExtractor, self).__init__()
         
-        # DF网络参数(与原始DF网络保持一致)
+        # DF network parameters, kept consistent with the original DF network.
         self.filter_nums = [32, 64, 128, 256]
         self.kernel_size = 8
         self.pool_sizes = [8, 8, 8, 8]
         self.pool_strides = [4, 4, 4, 4]
         self.use_se = use_se
         
-        # 构建4个Block
+        # Build four blocks.
         self.block1 = DFBlock(1, self.filter_nums[0], 
                              self.kernel_size, self.pool_sizes[0], 
                              self.pool_strides[0], dropout, 'elu', use_se)
@@ -194,20 +194,20 @@ class DFFeatureExtractor(nn.Module):
     
     def forward(self, x, num_blocks: Optional[int] = None):
         """
-        前向传播
+        Forward pass.
         
         Args:
-            x: 输入tensor, shape=(batch, length)
-            num_blocks: 使用的block数量，如果为None则使用全部
+            x: Input tensor, shape=(batch, length).
+            num_blocks: Number of blocks to use. If None, all blocks are used.
             
         Returns:
-            特征tensor
+            Feature tensor.
         """
-        # 确保输入是3D: (batch, 1, length)
+        # Ensure the input is 3D: (batch, 1, length).
         if len(x.shape) == 2:
             x = x.unsqueeze(1)
         
-        # 执行指定数量的blocks
+        # Run the specified number of blocks.
         num_blocks = num_blocks if num_blocks is not None else len(self.blocks)
         
         for i in range(num_blocks):
@@ -216,37 +216,37 @@ class DFFeatureExtractor(nn.Module):
         return x
     
     def forward_partial(self, x, num_blocks: int):
-        """前向传播部分网络(用于支持集)"""
+        """Forward through part of the network for the support set."""
         return self.forward(x, num_blocks)
     
     def forward_full(self, x):
-        """前向传播完整网络(用于查询集)"""
+        """Forward through the full network for the query set."""
         x = self.forward(x, None)
-        # 转置以匹配原始DF网络输出格式: (batch, length, channels)
+        # Transpose to match the original DF network output format: (batch, length, channels).
         return x.transpose(1, 2)
 
 
 class EnhancedMetaLearnet(nn.Module):
     """
-    增强的元学习网络 (混合方案C)
+    Enhanced meta-learning network for hybrid scheme C.
     
-    改进点:
-    1. 使用与DF相同的4层结构提取特征
-    2. Shot-level Attention融合（替代简单mean）
-    3. SE通道注意力机制
-    4. 多层MLP权重生成器（替代单层Linear）
+    Improvements:
+    1. Use the same four-layer structure as DF for feature extraction.
+    2. Use shot-level attention fusion instead of a simple mean.
+    3. Use SE channel attention.
+    4. Use a multi-layer MLP weight generator instead of a single linear layer.
     """
     
     def __init__(self, in_channels: int, out_channels: int, dropout: float = 0.5):
         super(EnhancedMetaLearnet, self).__init__()
         
-        # 步骤1: 特征提取网络（与DF相同结构）
+        # Step 1: feature extraction network with the same structure as DF.
         self.filter_nums = [32, 64, 128, 256]
         self.kernel_size = 8
         self.pool_sizes = [8, 8, 8, 8]
         self.pool_strides = [4, 4, 4, 4]
 
-        # 4个DFBlock
+        # Four DF blocks.
         self.block1 = DFBlock(in_channels, self.filter_nums[0], 
                              self.kernel_size, self.pool_sizes[0], 
                              self.pool_strides[0], dropout, 'elu', use_se=False)
@@ -263,13 +263,13 @@ class EnhancedMetaLearnet(nn.Module):
                              self.kernel_size, self.pool_sizes[3], 
                              self.pool_strides[3], dropout, 'relu', use_se=False)
         
-        # 步骤2: Shot-level Attention融合
+        # Step 2: shot-level attention fusion.
         self.shot_attention = ShotAttentionFusion(self.filter_nums[3])
         
-        # 步骤3: SE通道注意力
+        # Step 3: SE channel attention.
         self.channel_attention = SEBlock(self.filter_nums[3], reduction=16)
         
-        # 步骤4: 多层权重生成器
+        # Step 4: multi-layer weight generator.
         self.global_pool = nn.AdaptiveAvgPool1d(1)
         self.weight_generator = nn.Sequential(
             nn.Linear(self.filter_nums[3], self.filter_nums[3] * 2),
@@ -280,61 +280,61 @@ class EnhancedMetaLearnet(nn.Module):
             nn.LayerNorm(out_channels)
         )
         
-        # 残差连接（如果输入输出维度匹配）
+        # Residual connection if input and output dimensions match.
         self.use_residual = (self.filter_nums[3] == out_channels)
         if not self.use_residual:
             self.residual_proj = nn.Linear(self.filter_nums[3], out_channels)
     
     def forward(self, x):
         """
-        生成动态权重
+        Generate dynamic weights.
         
         Args:
-            x: 输入特征 (num_classes*shots, 2, length)
-               或 (num_classes, shots, 2, length) 如果已经reshape
-               其中通道0是数据，通道1是mask
+            x: Input features (num_classes*shots, 2, length),
+               or (num_classes, shots, 2, length) if already reshaped.
+               Channel 0 is data and channel 1 is the mask.
             
         Returns:
-            动态权重 (num_classes, out_channels)
+            Dynamic weights (num_classes, out_channels).
         """
-        # 处理输入维度
+        # Handle input dimensions.
         if len(x.shape) == 4:
             # (num_classes, shots, 2, length)
             num_classes, shots_per_class, _, length = x.shape
             x_reshaped = x.view(num_classes * shots_per_class, 2, length)
         else:
-            # (num_classes*shots, 2, length) - 需要从外部获知num_classes和shots
-            # 这种情况下需要在调用时处理，这里暂时不支持
+            # (num_classes*shots, 2, length) needs num_classes and shots from outside.
+            # This case must be handled at the call site and is not supported here yet.
             raise ValueError("Input must be (num_classes, shots, 2, length)")
         
-        # 步骤1: 特征提取（通过4个DFBlock）
+        # Step 1: feature extraction through four DF blocks.
         features = self.block1(x_reshaped)
         features = self.block2(features)
         features = self.block3(features)
         features = self.block4(features)
         # features: (num_classes*shots, 256, seq_len)
         
-        # 步骤2: 应用通道注意力
+        # Step 2: apply channel attention.
         features = self.channel_attention(features)
         # features: (num_classes*shots, 256, seq_len)
         
-        # 重整形回(num_classes, shots, 256, seq_len)
+        # Reshape back to (num_classes, shots, 256, seq_len).
         _, channels, seq_len = features.shape
         features = features.view(num_classes, shots_per_class, channels, seq_len)
         
-        # 步骤3: Shot-level Attention融合
+        # Step 3: shot-level attention fusion.
         if shots_per_class > 1:
             features = self.shot_attention(features)  # (num_classes, 256, seq_len)
         else:
             features = features.squeeze(1)  # (num_classes, 256, seq_len)
         
-        # 步骤4: 全局池化
+        # Step 4: global pooling.
         pooled_features = self.global_pool(features).squeeze(-1)  # (num_classes, 256)
         
-        # 步骤5: 多层权重生成
+        # Step 5: multi-layer weight generation.
         dynamic_weights = self.weight_generator(pooled_features)  # (num_classes, out_channels)
         
-        # 步骤6: 残差连接（如果维度匹配）
+        # Step 6: residual connection if dimensions match.
         if self.use_residual:
             dynamic_weights = dynamic_weights + pooled_features
         elif hasattr(self, 'residual_proj'):
@@ -345,12 +345,12 @@ class EnhancedMetaLearnet(nn.Module):
 
 class EnhancedMultiMetaFingerNet(nn.Module):
     """
-    增强的多标签元指纹识别网络 (混合方案C)
+    Enhanced multi-label meta fingerprinting network for hybrid scheme C.
     
-    改进:
-    1. 使用EnhancedMetaLearnet
-    2. 使用EnhancedClassificationHead (在classification_head_enhanced.py中)
-    3. 保持1×1动态卷积不变
+    Improvements:
+    1. Use EnhancedMetaLearnet.
+    2. Use EnhancedClassificationHead from classification_head_enhanced.py.
+    3. Keep the 1x1 dynamic convolution unchanged.
     """
     
     def __init__(self, num_classes: int = 3, dropout: float = 0.5, 
@@ -361,86 +361,86 @@ class EnhancedMultiMetaFingerNet(nn.Module):
         self.num_classes = num_classes
         self.support_blocks = support_blocks
         
-        # 主特征提取网络(DF网络) - 可选添加SE
+        # Main feature extraction network (DF network), optionally with SE.
         self.feature_extractor = DFFeatureExtractor(dropout, use_se=use_se_in_df)
         
-        # 计算中间特征维度
+        # Compute intermediate feature dimensions.
         self.support_feature_dim = self.feature_extractor.filter_nums[support_blocks - 1] if support_blocks > 0 else 128
         self.query_feature_dim = self.feature_extractor.filter_nums[-1]  # 256
         
-        # 增强的元学习网络
+        # Enhanced meta-learning network.
         self.meta_learnet = EnhancedMetaLearnet(
-            in_channels=2,  # 数据+mask
+            in_channels=2,  # Data + mask.
             out_channels=self.query_feature_dim,
             dropout=dropout
         )
         
-        # 特征重加权模块（1D动态卷积）- 保持不变
+        # Feature reweighting module (1D dynamic convolution), unchanged.
         self.feature_reweighting = FeatureReweightingModule(
             feature_dim=self.query_feature_dim,
             kernel_size=1
         )
         
-        # 增强的分类头
+        # Enhanced classification head.
         from classification_head_enhanced import EnhancedClassificationHead
         self.classification_head = EnhancedClassificationHead(
             feature_dim=self.query_feature_dim,
             num_classes=num_classes,
             seq_len=80,
-            num_topm_layers=2,  # 简化TopM，减少到2层
-            num_cross_layers=2   # Cross-Class Attention层数
+            num_topm_layers=2,  # Simplified TopM, reduced to two layers.
+            num_cross_layers=2   # Number of cross-class attention layers.
         )
         if is_main_process():
-            print(f"增强网络初始化完成:")
-            print(f"  - 类别数: {num_classes}")
-            print(f"  - DF使用SE: {use_se_in_df}")
-            print(f"  - 查询集特征维度: {self.query_feature_dim}")
-            print(f"  - Meta学习网络: Enhanced (Shot Attention + SE + Deep MLP)")
+            print(f"Enhanced network initialization complete:")
+            print(f"  - Number of classes: {num_classes}")
+            print(f"  - DF uses SE: {use_se_in_df}")
+            print(f"  - Query feature dimension: {self.query_feature_dim}")
+            print(f"  - Meta-learning network: Enhanced (Shot Attention + SE + Deep MLP)")
 
     def query_forward(self, x):
-        """查询集前向传播"""
+        """Query set forward pass."""
         return self.feature_extractor.forward_full(x)
     
     def support_forward(self, x, mask=None):
         """
-        支持集前向传播，生成动态权重
+        Support set forward pass that generates dynamic weights.
         
         Args:
-            x: 支持集数据 (num_classes, shots, length)
-            mask: 有效数据mask (num_classes, shots, length)
+            x: Support set data (num_classes, shots, length).
+            mask: Valid data mask (num_classes, shots, length).
             
         Returns:
-            动态权重 (num_classes, query_feature_dim)
+            Dynamic weights (num_classes, query_feature_dim).
         """
         num_classes, shots_per_class, length = x.shape
         
-        # 如果没有提供mask，则创建一个全1的mask
+        # Create an all-one mask if no mask is provided.
         if mask is None:
             mask = torch.ones_like(x)
         
-        # 将数据和mask在通道维度上拼接
+        # Stack data and mask on the channel dimension.
         # (num_classes, shots, length) + (num_classes, shots, length)
         # → (num_classes, shots, 2, length)
         support_input = torch.stack([x, mask], dim=2)
         
-        # 通过增强的meta_learnet生成动态权重
+        # Generate dynamic weights through the enhanced meta_learnet.
         dynamic_weights = self.meta_learnet(support_input)
         # dynamic_weights: (num_classes, query_feature_dim)
         
         return dynamic_weights
     
     def fusion_forward(self, query_features, dynamic_weights):
-        """特征融合前向传播"""
+        """Feature fusion forward pass."""
         return self.feature_reweighting(query_features, dynamic_weights)
     
     def classification_forward(self, reweighted_features):
-        """分类前向传播"""
+        """Classification forward pass."""
         logits = self.classification_head(reweighted_features)
         return logits
     
     def forward(self, query_data, support_data, support_masks=None):
         """
-        完整前向传播
+        Full forward pass.
         
         Args:
             query_data: (batch, length)
@@ -448,18 +448,18 @@ class EnhancedMultiMetaFingerNet(nn.Module):
             support_masks: (num_classes, shots, length)
             
         Returns:
-            dict包含查询特征、动态权重、融合特征和分类结果
+            Dictionary containing query features, dynamic weights, fused features, and classification results.
         """
-        # 查询集特征提取
+        # Extract query set features.
         query_features = self.query_forward(query_data)
         
-        # 支持集动态权重生成 (使用增强的MetaLearnet)
+        # Generate support set dynamic weights with EnhancedMetaLearnet.
         dynamic_weights = self.support_forward(support_data, support_masks)
         
-        # 特征融合（1D动态卷积）
+        # Feature fusion with 1D dynamic convolution.
         reweighted_features = self.fusion_forward(query_features, dynamic_weights)
         
-        # 多标签分类
+        # Multi-label classification.
         logits = self.classification_forward(reweighted_features)
         
         return {

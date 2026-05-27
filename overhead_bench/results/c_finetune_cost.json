@@ -1,0 +1,101 @@
+{
+  "phase": "C_finetune_cost",
+  "smoke": false,
+  "gpu_info": {
+    "available": true,
+    "logical_index": 0,
+    "name": "NVIDIA A100 80GB PCIe",
+    "total_memory_MiB": 81037.8,
+    "multi_processor_count": 108,
+    "cuda_capability": "8.0",
+    "torch_version": "2.4.1",
+    "cudnn_version": 90100
+  },
+  "cpu_mem_before": {
+    "rss_MiB": 516.21,
+    "vms_MiB": 14475.16
+  },
+  "cpu_mem_after_epoch": {
+    "rss_MiB": 1067.92,
+    "vms_MiB": 65905.65
+  },
+  "config": {
+    "batch_size": 1,
+    "k_shot": 20,
+    "num_classes": 90,
+    "base_classes": 60,
+    "novel_classes": 30,
+    "L_query": 20000,
+    "L_support": 10000,
+    "num_iters_per_epoch": 50,
+    "optimizer": "Adam",
+    "lr": 0.0001,
+    "weight_decay": 0.0001,
+    "loss": "BCEWithLogitsLoss",
+    "finetune_mode": "full"
+  },
+  "per_train_step": {
+    "timing_ms": {
+      "mean_ms": 523.7057,
+      "std_ms": 1.348,
+      "min_ms": 522.3956,
+      "max_ms": 526.1957,
+      "n_iter": 5
+    },
+    "peak_gpu_mem": {
+      "allocated_MiB": 25044.67,
+      "reserved_MiB": 43166.0
+    }
+  },
+  "one_epoch_simulated": {
+    "num_iters": 50,
+    "wall_clock_seconds": 26.382,
+    "per_iter_seconds_avg": 0.5276,
+    "peak_gpu_mem": {
+      "allocated_MiB": 25045.89,
+      "reserved_MiB": 43166.0
+    }
+  },
+  "C3_onboard_one_new_class": {
+    "description": "single support-branch forward on one novel class's K-shot samples",
+    "k_shot": 20,
+    "timing_ms": {
+      "mean_ms": 1.7359,
+      "std_ms": 0.0336,
+      "min_ms": 1.7091,
+      "max_ms": 1.8002,
+      "n_iter": 5
+    },
+    "peak_gpu_mem": {
+      "allocated_MiB": 480.38,
+      "reserved_MiB": 41038.0
+    }
+  },
+  "class_bank_cache": {
+    "num_classes_trained": 90,
+    "bank_size": 95,
+    "bank_shape": [
+      95,
+      256
+    ],
+    "compute_seconds_all_classes": 0.084,
+    "peak_gpu_mem_during_compute": {
+      "allocated_MiB": 9779.01,
+      "reserved_MiB": 12550.0
+    },
+    "in_memory_MiB": 0.0928,
+    "on_disk_MiB": 0.0939
+  },
+  "storage": {
+    "full_ckpt_path": "/root/works/MMF-1029-simple/overhead_bench/artifacts/c_full_ckpt.pth",
+    "full_ckpt_MiB": 40.2777,
+    "lean_ckpt_path": "/root/works/MMF-1029-simple/overhead_bench/artifacts/c_lean_ckpt.pth",
+    "lean_ckpt_MiB": 8.3218,
+    "class_bank_path": "/root/works/MMF-1029-simple/overhead_bench/artifacts/c_class_bank.pt",
+    "class_bank_MiB": 0.0939,
+    "lean_deployment_MiB_total": 8.4157,
+    "params_total": 3504130,
+    "params_lean": 2173129,
+    "params_stripped_ratio": 0.3798
+  }
+}

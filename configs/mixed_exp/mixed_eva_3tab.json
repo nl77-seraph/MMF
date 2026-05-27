@@ -1,0 +1,35 @@
+{
+  "seed": 1024,
+  "gpu_id": 4,
+
+  "num_classes": 60,
+  "activated_classes": 60,
+  "tabs": 3,
+
+  "support_target_length": 10000,
+  "query_target_length": 20000,
+
+  "shots_per_class": 30,
+  "support_blocks": 0,
+  "dropout": 0.15,
+  "use_se_in_df": true,
+
+  "val_query_json": "/root/datasets/disjoint_zone/3tab_disjoint_zone/test/3tab_disjoint_zone_test.json",
+  "val_query_dir": "/root/datasets/disjoint_zone/3tab_disjoint_zone/test/query_data",
+  "val_support_root_dir": "/root/datasets/disjoint_zone/3tab_disjoint_zone/train/support_data",
+
+  "val_batch_size": 128,
+  "num_workers": 0,
+
+  "loss_type": "weighted_bce",
+  "positive_ratio": 19.0,
+
+  "ckpt_path": "/root/works/MMF-1029-simple/experiments/base_training/mixed_tab_30base_mixed_20260121_195055_ddp/checkpoints/best_model.pth",
+
+    "do_visualization": true,
+    "visualization_output_dir": "./visualization_results/base_model",
+    "vis_max_batches": 10,
+    "vis_num_classes": 20,
+    "vis_samples_per_class": 10,
+    "novel_classes": []
+}

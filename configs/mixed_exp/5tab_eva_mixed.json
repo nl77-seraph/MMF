@@ -1,0 +1,34 @@
+{
+  "seed": 1024,
+  "gpu_id": 4,
+
+  "num_classes": 60,
+  "activated_classes": 60,
+  "tabs": "mixed",
+
+  "support_target_length": 10000,
+  "query_target_length": 20000,
+
+  "shots_per_class": 30,
+  "support_blocks": 0,
+  "dropout": 0.15,
+  "use_se_in_df": true,
+  "val_query_json": "/root/datasets/mixed_multi_tab/mixed_tab/test/mixed_tab_test.json",
+  "val_query_dir": "/root/datasets/mixed_multi_tab/mixed_tab/test/query_data",
+  "val_support_root_dir": "/root/datasets/mixed_multi_tab/mixed_tab/test/support_data",
+
+  "val_batch_size": 128,
+  "num_workers": 0,
+
+  "loss_type": "weighted_bce",
+  "positive_ratio": 19.0,
+
+  "ckpt_path": "/root/works/MMF-1029-simple/experiments/base_training/5tab_5shot_medium_down_5_20260122_225248_ddp/checkpoints/best_model.pth",
+
+  "do_tsne": true,
+  "tsne_source": "dynamic_weights",
+  "tsne_max_batches": 200,
+  "tsne_perplexity": 30,
+  "tsne_random_state": 42,
+  "tsne_output": "./experiments/mixed_exp/4tab_tsne_dynamic_weights.png"
+}

@@ -1,0 +1,808 @@
+{
+  "purpose": "Focused scalability and inference-overhead comparison as monitored set grows.",
+  "notes": [
+    "MMF uses cached class-bank vectors and does not run the support branch online.",
+    "For each N, MMF is instantiated with an N-row class bank.",
+    "ARES, BAPM, and FMWF are adapted as extensible one-vs-all banks with exactly N binary models.",
+    "Inputs are synthetic single-query tensors; this benchmark does not measure detection accuracy."
+  ],
+  "gpu_info": {
+    "available": true,
+    "logical_index": 0,
+    "name": "NVIDIA A100 80GB PCIe",
+    "total_memory_MiB": 81037.8,
+    "multi_processor_count": 108,
+    "cuda_capability": "8.0",
+    "torch_version": "2.6.0+cu124",
+    "cudnn_version": 90100
+  },
+  "config": {
+    "N_sweep": [
+      5,
+      10,
+      15,
+      20,
+      25,
+      30,
+      40,
+      50,
+      60,
+      70,
+      80,
+      90,
+      95
+    ],
+    "mmf_query_len": 20000,
+    "ares_seq_len": 10000,
+    "baseline_seq_len": 12000,
+    "ares_max_len": 32,
+    "mmf_ckpt": "/home/dzx/TrafficDev/trafficDev/MMF/experiments/base_training/3tab_5shot_medium_down_3_20260120_135412_ddp/checkpoints/best_model.pth",
+    "n_warmup": 5,
+    "n_iter": 30,
+    "seed": 1024
+  },
+  "methods": [
+    "MMF",
+    "ARES",
+    "BAPM",
+    "FMWF"
+  ],
+  "table": [
+    {
+      "Num_classes": 5,
+      "latency/MMF_ms": 7.9206,
+      "latency/ARES_ms": 16.373,
+      "latency/BAPM_ms": 12.0806,
+      "latency/FMWF_ms": 6.9967,
+      "GPU/MMF_MiB": 26.47,
+      "GPU/ARES_MiB": 62.53,
+      "GPU/BAPM_MiB": 22.41,
+      "GPU/FMWF_MiB": 161.12,
+      "latency_std/MMF_ms": 0.4302,
+      "latency_std/ARES_ms": 1.2215,
+      "latency_std/BAPM_ms": 0.5161,
+      "latency_std/FMWF_ms": 0.3995,
+      "GPU_reserved/MMF_MiB": 30.0,
+      "GPU_reserved/ARES_MiB": 84.0,
+      "GPU_reserved/BAPM_MiB": 34.0,
+      "GPU_reserved/FMWF_MiB": 180.0
+    },
+    {
+      "Num_classes": 10,
+      "latency/MMF_ms": 11.988,
+      "latency/ARES_ms": 31.3828,
+      "latency/BAPM_ms": 24.0561,
+      "latency/FMWF_ms": 14.3316,
+      "GPU/MMF_MiB": 26.95,
+      "GPU/ARES_MiB": 111.17,
+      "GPU/BAPM_MiB": 33.6,
+      "GPU/FMWF_MiB": 306.18,
+      "latency_std/MMF_ms": 0.4944,
+      "latency_std/ARES_ms": 1.4933,
+      "latency_std/BAPM_ms": 0.9605,
+      "latency_std/FMWF_ms": 1.5283,
+      "GPU_reserved/MMF_MiB": 50.0,
+      "GPU_reserved/ARES_MiB": 124.0,
+      "GPU_reserved/BAPM_MiB": 44.0,
+      "GPU_reserved/FMWF_MiB": 314.0
+    },
+    {
+      "Num_classes": 15,
+      "latency/MMF_ms": 17.3391,
+      "latency/ARES_ms": 48.4598,
+      "latency/BAPM_ms": 37.3297,
+      "latency/FMWF_ms": 20.1698,
+      "GPU/MMF_MiB": 26.95,
+      "GPU/ARES_MiB": 159.86,
+      "GPU/BAPM_MiB": 44.79,
+      "GPU/FMWF_MiB": 451.24,
+      "latency_std/MMF_ms": 0.6276,
+      "latency_std/ARES_ms": 1.8478,
+      "latency_std/BAPM_ms": 1.5026,
+      "latency_std/FMWF_ms": 0.9745,
+      "GPU_reserved/MMF_MiB": 50.0,
+      "GPU_reserved/ARES_MiB": 164.0,
+      "GPU_reserved/BAPM_MiB": 56.0,
+      "GPU_reserved/FMWF_MiB": 470.0
+    },
+    {
+      "Num_classes": 20,
+      "latency/MMF_ms": 22.3919,
+      "latency/ARES_ms": 65.2857,
+      "latency/BAPM_ms": 49.67,
+      "latency/FMWF_ms": 28.7766,
+      "GPU/MMF_MiB": 26.96,
+      "GPU/ARES_MiB": 209.19,
+      "GPU/BAPM_MiB": 55.98,
+      "GPU/FMWF_MiB": 596.31,
+      "latency_std/MMF_ms": 0.7149,
+      "latency_std/ARES_ms": 2.0712,
+      "latency_std/BAPM_ms": 1.7213,
+      "latency_std/FMWF_ms": 1.2356,
+      "GPU_reserved/MMF_MiB": 50.0,
+      "GPU_reserved/ARES_MiB": 224.0,
+      "GPU_reserved/BAPM_MiB": 68.0,
+      "GPU_reserved/FMWF_MiB": 604.0
+    },
+    {
+      "Num_classes": 25,
+      "latency/MMF_ms": 26.701,
+      "latency/ARES_ms": 80.5752,
+      "latency/BAPM_ms": 60.3269,
+      "latency/FMWF_ms": 34.8284,
+      "GPU/MMF_MiB": 26.96,
+      "GPU/ARES_MiB": 257.83,
+      "GPU/BAPM_MiB": 67.17,
+      "GPU/FMWF_MiB": 741.37,
+      "latency_std/MMF_ms": 1.1941,
+      "latency_std/ARES_ms": 4.2113,
+      "latency_std/BAPM_ms": 2.0938,
+      "latency_std/FMWF_ms": 1.0702,
+      "GPU_reserved/MMF_MiB": 50.0,
+      "GPU_reserved/ARES_MiB": 264.0,
+      "GPU_reserved/BAPM_MiB": 78.0,
+      "GPU_reserved/FMWF_MiB": 760.0
+    },
+    {
+      "Num_classes": 30,
+      "latency/MMF_ms": 31.6489,
+      "latency/ARES_ms": 98.6185,
+      "latency/BAPM_ms": 73.7978,
+      "latency/FMWF_ms": 39.5917,
+      "GPU/MMF_MiB": 26.96,
+      "GPU/ARES_MiB": 307.22,
+      "GPU/BAPM_MiB": 78.36,
+      "GPU/FMWF_MiB": 886.43,
+      "latency_std/MMF_ms": 0.9447,
+      "latency_std/ARES_ms": 2.947,
+      "latency_std/BAPM_ms": 1.6978,
+      "latency_std/FMWF_ms": 1.2444,
+      "GPU_reserved/MMF_MiB": 50.0,
+      "GPU_reserved/ARES_MiB": 324.0,
+      "GPU_reserved/BAPM_MiB": 90.0,
+      "GPU_reserved/FMWF_MiB": 894.0
+    },
+    {
+      "Num_classes": 40,
+      "latency/MMF_ms": 41.8826,
+      "latency/ARES_ms": 135.677,
+      "latency/BAPM_ms": 99.2245,
+      "latency/FMWF_ms": 56.1765,
+      "GPU/MMF_MiB": 26.97,
+      "GPU/ARES_MiB": 405.24,
+      "GPU/BAPM_MiB": 100.75,
+      "GPU/FMWF_MiB": 1176.56,
+      "latency_std/MMF_ms": 1.7543,
+      "latency_std/ARES_ms": 3.0599,
+      "latency_std/BAPM_ms": 2.2901,
+      "latency_std/FMWF_ms": 1.891,
+      "GPU_reserved/MMF_MiB": 50.0,
+      "GPU_reserved/ARES_MiB": 424.0,
+      "GPU_reserved/BAPM_MiB": 112.0,
+      "GPU_reserved/FMWF_MiB": 1186.0
+    },
+    {
+      "Num_classes": 50,
+      "latency/MMF_ms": 50.1761,
+      "latency/ARES_ms": 162.2547,
+      "latency/BAPM_ms": 124.637,
+      "latency/FMWF_ms": 69.4357,
+      "GPU/MMF_MiB": 26.98,
+      "GPU/ARES_MiB": 503.27,
+      "GPU/BAPM_MiB": 123.13,
+      "GPU/FMWF_MiB": 1466.69,
+      "latency_std/MMF_ms": 1.4642,
+      "latency_std/ARES_ms": 4.2753,
+      "latency_std/BAPM_ms": 2.425,
+      "latency_std/FMWF_ms": 2.4365,
+      "GPU_reserved/MMF_MiB": 50.0,
+      "GPU_reserved/ARES_MiB": 522.0,
+      "GPU_reserved/BAPM_MiB": 134.0,
+      "GPU_reserved/FMWF_MiB": 1476.0
+    },
+    {
+      "Num_classes": 60,
+      "latency/MMF_ms": 60.5095,
+      "latency/ARES_ms": 195.3369,
+      "latency/BAPM_ms": 145.9691,
+      "latency/FMWF_ms": 83.1143,
+      "GPU/MMF_MiB": 26.99,
+      "GPU/ARES_MiB": 601.29,
+      "GPU/BAPM_MiB": 145.51,
+      "GPU/FMWF_MiB": 1756.81,
+      "latency_std/MMF_ms": 2.4851,
+      "latency_std/ARES_ms": 4.1444,
+      "latency_std/BAPM_ms": 3.368,
+      "latency_std/FMWF_ms": 1.9159,
+      "GPU_reserved/MMF_MiB": 50.0,
+      "GPU_reserved/ARES_MiB": 622.0,
+      "GPU_reserved/BAPM_MiB": 156.0,
+      "GPU_reserved/FMWF_MiB": 1766.0
+    },
+    {
+      "Num_classes": 70,
+      "latency/MMF_ms": 70.5276,
+      "latency/ARES_ms": 233.0375,
+      "latency/BAPM_ms": 173.7117,
+      "latency/FMWF_ms": 97.8927,
+      "GPU/MMF_MiB": 27.0,
+      "GPU/ARES_MiB": 698.63,
+      "GPU/BAPM_MiB": 167.89,
+      "GPU/FMWF_MiB": 2046.94,
+      "latency_std/MMF_ms": 2.5942,
+      "latency_std/ARES_ms": 5.4269,
+      "latency_std/BAPM_ms": 5.7542,
+      "latency_std/FMWF_ms": 3.441,
+      "GPU_reserved/MMF_MiB": 50.0,
+      "GPU_reserved/ARES_MiB": 702.0,
+      "GPU_reserved/BAPM_MiB": 178.0,
+      "GPU_reserved/FMWF_MiB": 2056.0
+    },
+    {
+      "Num_classes": 80,
+      "latency/MMF_ms": 79.2838,
+      "latency/ARES_ms": 267.3059,
+      "latency/BAPM_ms": 198.1823,
+      "latency/FMWF_ms": 111.1288,
+      "GPU/MMF_MiB": 27.01,
+      "GPU/ARES_MiB": 796.59,
+      "GPU/BAPM_MiB": 190.28,
+      "GPU/FMWF_MiB": 2337.07,
+      "latency_std/MMF_ms": 1.9937,
+      "latency_std/ARES_ms": 5.1052,
+      "latency_std/BAPM_ms": 3.6308,
+      "latency_std/FMWF_ms": 2.8837,
+      "GPU_reserved/MMF_MiB": 50.0,
+      "GPU_reserved/ARES_MiB": 802.0,
+      "GPU_reserved/BAPM_MiB": 202.0,
+      "GPU_reserved/FMWF_MiB": 2346.0
+    },
+    {
+      "Num_classes": 90,
+      "latency/MMF_ms": 92.0058,
+      "latency/ARES_ms": 294.3671,
+      "latency/BAPM_ms": 226.485,
+      "latency/FMWF_ms": 128.52,
+      "GPU/MMF_MiB": 27.02,
+      "GPU/ARES_MiB": 894.62,
+      "GPU/BAPM_MiB": 212.66,
+      "GPU/FMWF_MiB": 2627.2,
+      "latency_std/MMF_ms": 6.1983,
+      "latency_std/ARES_ms": 8.906,
+      "latency_std/BAPM_ms": 6.1414,
+      "latency_std/FMWF_ms": 3.6398,
+      "GPU_reserved/MMF_MiB": 50.0,
+      "GPU_reserved/ARES_MiB": 902.0,
+      "GPU_reserved/BAPM_MiB": 224.0,
+      "GPU_reserved/FMWF_MiB": 2636.0
+    },
+    {
+      "Num_classes": 95,
+      "latency/MMF_ms": 93.0129,
+      "latency/ARES_ms": 313.0575,
+      "latency/BAPM_ms": 245.2935,
+      "latency/FMWF_ms": 136.5808,
+      "GPU/MMF_MiB": 27.03,
+      "GPU/ARES_MiB": 944.01,
+      "GPU/BAPM_MiB": 223.85,
+      "GPU/FMWF_MiB": 2772.26,
+      "latency_std/MMF_ms": 2.2228,
+      "latency_std/ARES_ms": 8.4397,
+      "latency_std/BAPM_ms": 6.0588,
+      "latency_std/FMWF_ms": 3.3501,
+      "GPU_reserved/MMF_MiB": 50.0,
+      "GPU_reserved/ARES_MiB": 962.0,
+      "GPU_reserved/BAPM_MiB": 234.0,
+      "GPU_reserved/FMWF_MiB": 2790.0
+    }
+  ],
+  "detailed": [
+    {
+      "Num_classes": 5,
+      "metrics": {
+        "MMF": {
+          "latency_mean_ms": 7.9206,
+          "latency_std_ms": 0.4302,
+          "latency_min_ms": 7.2919,
+          "latency_max_ms": 8.8596,
+          "gpu_allocated_MiB": 26.47,
+          "gpu_reserved_MiB": 30.0
+        },
+        "ARES": {
+          "latency_mean_ms": 16.373,
+          "latency_std_ms": 1.2215,
+          "latency_min_ms": 15.0467,
+          "latency_max_ms": 20.7442,
+          "gpu_allocated_MiB": 62.53,
+          "gpu_reserved_MiB": 84.0
+        },
+        "BAPM": {
+          "method": "BAPM",
+          "latency_mean_ms": 12.0806,
+          "latency_std_ms": 0.5161,
+          "latency_min_ms": 11.39,
+          "latency_max_ms": 13.2956,
+          "gpu_allocated_MiB": 22.41,
+          "gpu_reserved_MiB": 34.0
+        },
+        "FMWF": {
+          "method": "FMWF",
+          "latency_mean_ms": 6.9967,
+          "latency_std_ms": 0.3995,
+          "latency_min_ms": 6.4686,
+          "latency_max_ms": 8.0824,
+          "gpu_allocated_MiB": 161.12,
+          "gpu_reserved_MiB": 180.0
+        }
+      }
+    },
+    {
+      "Num_classes": 10,
+      "metrics": {
+        "MMF": {
+          "latency_mean_ms": 11.988,
+          "latency_std_ms": 0.4944,
+          "latency_min_ms": 11.6972,
+          "latency_max_ms": 13.4748,
+          "gpu_allocated_MiB": 26.95,
+          "gpu_reserved_MiB": 50.0
+        },
+        "ARES": {
+          "latency_mean_ms": 31.3828,
+          "latency_std_ms": 1.4933,
+          "latency_min_ms": 29.6315,
+          "latency_max_ms": 36.6285,
+          "gpu_allocated_MiB": 111.17,
+          "gpu_reserved_MiB": 124.0
+        },
+        "BAPM": {
+          "method": "BAPM",
+          "latency_mean_ms": 24.0561,
+          "latency_std_ms": 0.9605,
+          "latency_min_ms": 22.6918,
+          "latency_max_ms": 26.0332,
+          "gpu_allocated_MiB": 33.6,
+          "gpu_reserved_MiB": 44.0
+        },
+        "FMWF": {
+          "method": "FMWF",
+          "latency_mean_ms": 14.3316,
+          "latency_std_ms": 1.5283,
+          "latency_min_ms": 12.884,
+          "latency_max_ms": 21.3811,
+          "gpu_allocated_MiB": 306.18,
+          "gpu_reserved_MiB": 314.0
+        }
+      }
+    },
+    {
+      "Num_classes": 15,
+      "metrics": {
+        "MMF": {
+          "latency_mean_ms": 17.3391,
+          "latency_std_ms": 0.6276,
+          "latency_min_ms": 16.042,
+          "latency_max_ms": 18.6286,
+          "gpu_allocated_MiB": 26.95,
+          "gpu_reserved_MiB": 50.0
+        },
+        "ARES": {
+          "latency_mean_ms": 48.4598,
+          "latency_std_ms": 1.8478,
+          "latency_min_ms": 46.0503,
+          "latency_max_ms": 52.4616,
+          "gpu_allocated_MiB": 159.86,
+          "gpu_reserved_MiB": 164.0
+        },
+        "BAPM": {
+          "method": "BAPM",
+          "latency_mean_ms": 37.3297,
+          "latency_std_ms": 1.5026,
+          "latency_min_ms": 34.4771,
+          "latency_max_ms": 41.6635,
+          "gpu_allocated_MiB": 44.79,
+          "gpu_reserved_MiB": 56.0
+        },
+        "FMWF": {
+          "method": "FMWF",
+          "latency_mean_ms": 20.1698,
+          "latency_std_ms": 0.9745,
+          "latency_min_ms": 19.2696,
+          "latency_max_ms": 23.6626,
+          "gpu_allocated_MiB": 451.24,
+          "gpu_reserved_MiB": 470.0
+        }
+      }
+    },
+    {
+      "Num_classes": 20,
+      "metrics": {
+        "MMF": {
+          "latency_mean_ms": 22.3919,
+          "latency_std_ms": 0.7149,
+          "latency_min_ms": 20.6582,
+          "latency_max_ms": 23.9247,
+          "gpu_allocated_MiB": 26.96,
+          "gpu_reserved_MiB": 50.0
+        },
+        "ARES": {
+          "latency_mean_ms": 65.2857,
+          "latency_std_ms": 2.0712,
+          "latency_min_ms": 61.6038,
+          "latency_max_ms": 69.7303,
+          "gpu_allocated_MiB": 209.19,
+          "gpu_reserved_MiB": 224.0
+        },
+        "BAPM": {
+          "method": "BAPM",
+          "latency_mean_ms": 49.67,
+          "latency_std_ms": 1.7213,
+          "latency_min_ms": 46.1722,
+          "latency_max_ms": 53.2675,
+          "gpu_allocated_MiB": 55.98,
+          "gpu_reserved_MiB": 68.0
+        },
+        "FMWF": {
+          "method": "FMWF",
+          "latency_mean_ms": 28.7766,
+          "latency_std_ms": 1.2356,
+          "latency_min_ms": 26.2943,
+          "latency_max_ms": 31.2934,
+          "gpu_allocated_MiB": 596.31,
+          "gpu_reserved_MiB": 604.0
+        }
+      }
+    },
+    {
+      "Num_classes": 25,
+      "metrics": {
+        "MMF": {
+          "latency_mean_ms": 26.701,
+          "latency_std_ms": 1.1941,
+          "latency_min_ms": 25.1843,
+          "latency_max_ms": 29.314,
+          "gpu_allocated_MiB": 26.96,
+          "gpu_reserved_MiB": 50.0
+        },
+        "ARES": {
+          "latency_mean_ms": 80.5752,
+          "latency_std_ms": 4.2113,
+          "latency_min_ms": 74.2134,
+          "latency_max_ms": 90.6926,
+          "gpu_allocated_MiB": 257.83,
+          "gpu_reserved_MiB": 264.0
+        },
+        "BAPM": {
+          "method": "BAPM",
+          "latency_mean_ms": 60.3269,
+          "latency_std_ms": 2.0938,
+          "latency_min_ms": 56.2924,
+          "latency_max_ms": 67.8707,
+          "gpu_allocated_MiB": 67.17,
+          "gpu_reserved_MiB": 78.0
+        },
+        "FMWF": {
+          "method": "FMWF",
+          "latency_mean_ms": 34.8284,
+          "latency_std_ms": 1.0702,
+          "latency_min_ms": 32.6523,
+          "latency_max_ms": 37.4282,
+          "gpu_allocated_MiB": 741.37,
+          "gpu_reserved_MiB": 760.0
+        }
+      }
+    },
+    {
+      "Num_classes": 30,
+      "metrics": {
+        "MMF": {
+          "latency_mean_ms": 31.6489,
+          "latency_std_ms": 0.9447,
+          "latency_min_ms": 29.7267,
+          "latency_max_ms": 33.7408,
+          "gpu_allocated_MiB": 26.96,
+          "gpu_reserved_MiB": 50.0
+        },
+        "ARES": {
+          "latency_mean_ms": 98.6185,
+          "latency_std_ms": 2.947,
+          "latency_min_ms": 93.3816,
+          "latency_max_ms": 103.7179,
+          "gpu_allocated_MiB": 307.22,
+          "gpu_reserved_MiB": 324.0
+        },
+        "BAPM": {
+          "method": "BAPM",
+          "latency_mean_ms": 73.7978,
+          "latency_std_ms": 1.6978,
+          "latency_min_ms": 70.3672,
+          "latency_max_ms": 76.0658,
+          "gpu_allocated_MiB": 78.36,
+          "gpu_reserved_MiB": 90.0
+        },
+        "FMWF": {
+          "method": "FMWF",
+          "latency_mean_ms": 39.5917,
+          "latency_std_ms": 1.2444,
+          "latency_min_ms": 38.4061,
+          "latency_max_ms": 43.0295,
+          "gpu_allocated_MiB": 886.43,
+          "gpu_reserved_MiB": 894.0
+        }
+      }
+    },
+    {
+      "Num_classes": 40,
+      "metrics": {
+        "MMF": {
+          "latency_mean_ms": 41.8826,
+          "latency_std_ms": 1.7543,
+          "latency_min_ms": 39.4281,
+          "latency_max_ms": 46.207,
+          "gpu_allocated_MiB": 26.97,
+          "gpu_reserved_MiB": 50.0
+        },
+        "ARES": {
+          "latency_mean_ms": 135.677,
+          "latency_std_ms": 3.0599,
+          "latency_min_ms": 128.4004,
+          "latency_max_ms": 142.2541,
+          "gpu_allocated_MiB": 405.24,
+          "gpu_reserved_MiB": 424.0
+        },
+        "BAPM": {
+          "method": "BAPM",
+          "latency_mean_ms": 99.2245,
+          "latency_std_ms": 2.2901,
+          "latency_min_ms": 94.4384,
+          "latency_max_ms": 102.7809,
+          "gpu_allocated_MiB": 100.75,
+          "gpu_reserved_MiB": 112.0
+        },
+        "FMWF": {
+          "method": "FMWF",
+          "latency_mean_ms": 56.1765,
+          "latency_std_ms": 1.891,
+          "latency_min_ms": 52.607,
+          "latency_max_ms": 60.5266,
+          "gpu_allocated_MiB": 1176.56,
+          "gpu_reserved_MiB": 1186.0
+        }
+      }
+    },
+    {
+      "Num_classes": 50,
+      "metrics": {
+        "MMF": {
+          "latency_mean_ms": 50.1761,
+          "latency_std_ms": 1.4642,
+          "latency_min_ms": 47.8085,
+          "latency_max_ms": 53.974,
+          "gpu_allocated_MiB": 26.98,
+          "gpu_reserved_MiB": 50.0
+        },
+        "ARES": {
+          "latency_mean_ms": 162.2547,
+          "latency_std_ms": 4.2753,
+          "latency_min_ms": 153.0286,
+          "latency_max_ms": 174.5685,
+          "gpu_allocated_MiB": 503.27,
+          "gpu_reserved_MiB": 522.0
+        },
+        "BAPM": {
+          "method": "BAPM",
+          "latency_mean_ms": 124.637,
+          "latency_std_ms": 2.425,
+          "latency_min_ms": 119.2131,
+          "latency_max_ms": 130.6573,
+          "gpu_allocated_MiB": 123.13,
+          "gpu_reserved_MiB": 134.0
+        },
+        "FMWF": {
+          "method": "FMWF",
+          "latency_mean_ms": 69.4357,
+          "latency_std_ms": 2.4365,
+          "latency_min_ms": 65.108,
+          "latency_max_ms": 75.3633,
+          "gpu_allocated_MiB": 1466.69,
+          "gpu_reserved_MiB": 1476.0
+        }
+      }
+    },
+    {
+      "Num_classes": 60,
+      "metrics": {
+        "MMF": {
+          "latency_mean_ms": 60.5095,
+          "latency_std_ms": 2.4851,
+          "latency_min_ms": 56.3169,
+          "latency_max_ms": 65.4879,
+          "gpu_allocated_MiB": 26.99,
+          "gpu_reserved_MiB": 50.0
+        },
+        "ARES": {
+          "latency_mean_ms": 195.3369,
+          "latency_std_ms": 4.1444,
+          "latency_min_ms": 189.399,
+          "latency_max_ms": 205.4441,
+          "gpu_allocated_MiB": 601.29,
+          "gpu_reserved_MiB": 622.0
+        },
+        "BAPM": {
+          "method": "BAPM",
+          "latency_mean_ms": 145.9691,
+          "latency_std_ms": 3.368,
+          "latency_min_ms": 139.5784,
+          "latency_max_ms": 153.644,
+          "gpu_allocated_MiB": 145.51,
+          "gpu_reserved_MiB": 156.0
+        },
+        "FMWF": {
+          "method": "FMWF",
+          "latency_mean_ms": 83.1143,
+          "latency_std_ms": 1.9159,
+          "latency_min_ms": 78.3206,
+          "latency_max_ms": 87.2018,
+          "gpu_allocated_MiB": 1756.81,
+          "gpu_reserved_MiB": 1766.0
+        }
+      }
+    },
+    {
+      "Num_classes": 70,
+      "metrics": {
+        "MMF": {
+          "latency_mean_ms": 70.5276,
+          "latency_std_ms": 2.5942,
+          "latency_min_ms": 66.5426,
+          "latency_max_ms": 79.9017,
+          "gpu_allocated_MiB": 27.0,
+          "gpu_reserved_MiB": 50.0
+        },
+        "ARES": {
+          "latency_mean_ms": 233.0375,
+          "latency_std_ms": 5.4269,
+          "latency_min_ms": 224.6789,
+          "latency_max_ms": 247.9493,
+          "gpu_allocated_MiB": 698.63,
+          "gpu_reserved_MiB": 702.0
+        },
+        "BAPM": {
+          "method": "BAPM",
+          "latency_mean_ms": 173.7117,
+          "latency_std_ms": 5.7542,
+          "latency_min_ms": 163.7417,
+          "latency_max_ms": 187.1913,
+          "gpu_allocated_MiB": 167.89,
+          "gpu_reserved_MiB": 178.0
+        },
+        "FMWF": {
+          "method": "FMWF",
+          "latency_mean_ms": 97.8927,
+          "latency_std_ms": 3.441,
+          "latency_min_ms": 91.3695,
+          "latency_max_ms": 105.8693,
+          "gpu_allocated_MiB": 2046.94,
+          "gpu_reserved_MiB": 2056.0
+        }
+      }
+    },
+    {
+      "Num_classes": 80,
+      "metrics": {
+        "MMF": {
+          "latency_mean_ms": 79.2838,
+          "latency_std_ms": 1.9937,
+          "latency_min_ms": 75.0285,
+          "latency_max_ms": 83.0259,
+          "gpu_allocated_MiB": 27.01,
+          "gpu_reserved_MiB": 50.0
+        },
+        "ARES": {
+          "latency_mean_ms": 267.3059,
+          "latency_std_ms": 5.1052,
+          "latency_min_ms": 257.3107,
+          "latency_max_ms": 276.0294,
+          "gpu_allocated_MiB": 796.59,
+          "gpu_reserved_MiB": 802.0
+        },
+        "BAPM": {
+          "method": "BAPM",
+          "latency_mean_ms": 198.1823,
+          "latency_std_ms": 3.6308,
+          "latency_min_ms": 189.8301,
+          "latency_max_ms": 204.0811,
+          "gpu_allocated_MiB": 190.28,
+          "gpu_reserved_MiB": 202.0
+        },
+        "FMWF": {
+          "method": "FMWF",
+          "latency_mean_ms": 111.1288,
+          "latency_std_ms": 2.8837,
+          "latency_min_ms": 105.6932,
+          "latency_max_ms": 115.9168,
+          "gpu_allocated_MiB": 2337.07,
+          "gpu_reserved_MiB": 2346.0
+        }
+      }
+    },
+    {
+      "Num_classes": 90,
+      "metrics": {
+        "MMF": {
+          "latency_mean_ms": 92.0058,
+          "latency_std_ms": 6.1983,
+          "latency_min_ms": 86.0344,
+          "latency_max_ms": 122.2543,
+          "gpu_allocated_MiB": 27.02,
+          "gpu_reserved_MiB": 50.0
+        },
+        "ARES": {
+          "latency_mean_ms": 294.3671,
+          "latency_std_ms": 8.906,
+          "latency_min_ms": 278.7328,
+          "latency_max_ms": 315.3111,
+          "gpu_allocated_MiB": 894.62,
+          "gpu_reserved_MiB": 902.0
+        },
+        "BAPM": {
+          "method": "BAPM",
+          "latency_mean_ms": 226.485,
+          "latency_std_ms": 6.1414,
+          "latency_min_ms": 212.31,
+          "latency_max_ms": 241.0148,
+          "gpu_allocated_MiB": 212.66,
+          "gpu_reserved_MiB": 224.0
+        },
+        "FMWF": {
+          "method": "FMWF",
+          "latency_mean_ms": 128.52,
+          "latency_std_ms": 3.6398,
+          "latency_min_ms": 120.1132,
+          "latency_max_ms": 136.0712,
+          "gpu_allocated_MiB": 2627.2,
+          "gpu_reserved_MiB": 2636.0
+        }
+      }
+    },
+    {
+      "Num_classes": 95,
+      "metrics": {
+        "MMF": {
+          "latency_mean_ms": 93.0129,
+          "latency_std_ms": 2.2228,
+          "latency_min_ms": 88.6026,
+          "latency_max_ms": 97.1807,
+          "gpu_allocated_MiB": 27.03,
+          "gpu_reserved_MiB": 50.0
+        },
+        "ARES": {
+          "latency_mean_ms": 313.0575,
+          "latency_std_ms": 8.4397,
+          "latency_min_ms": 300.4754,
+          "latency_max_ms": 337.2278,
+          "gpu_allocated_MiB": 944.01,
+          "gpu_reserved_MiB": 962.0
+        },
+        "BAPM": {
+          "method": "BAPM",
+          "latency_mean_ms": 245.2935,
+          "latency_std_ms": 6.0588,
+          "latency_min_ms": 235.1503,
+          "latency_max_ms": 263.3656,
+          "gpu_allocated_MiB": 223.85,
+          "gpu_reserved_MiB": 234.0
+        },
+        "FMWF": {
+          "method": "FMWF",
+          "latency_mean_ms": 136.5808,
+          "latency_std_ms": 3.3501,
+          "latency_min_ms": 126.5613,
+          "latency_max_ms": 144.044,
+          "gpu_allocated_MiB": 2772.26,
+          "gpu_reserved_MiB": 2790.0
+        }
+      }
+    }
+  ]
+}

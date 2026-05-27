@@ -1,0 +1,57 @@
+{
+  "phase": "B_initial_training_cost",
+  "smoke": false,
+  "config": {
+    "num_classes": 60,
+    "shots_per_class": 1,
+    "batch_size": 1,
+    "L_query": 20000,
+    "L_support": 10000,
+    "optimizer": "Adam",
+    "lr": 5e-05,
+    "weight_decay": 0.0001,
+    "loss": "BCEWithLogitsLoss"
+  },
+  "gpu_info": {
+    "available": true,
+    "logical_index": 0,
+    "name": "NVIDIA A100 80GB PCIe",
+    "total_memory_MiB": 81037.8,
+    "multi_processor_count": 108,
+    "cuda_capability": "8.0",
+    "torch_version": "2.4.1",
+    "cudnn_version": 90100
+  },
+  "cpu_mem_before": {
+    "rss_MiB": 407.68,
+    "vms_MiB": 14265.0
+  },
+  "cpu_mem_after": {
+    "rss_MiB": 1066.33,
+    "vms_MiB": 26356.94
+  },
+  "params": {
+    "total": 3504130,
+    "trainable": 3504130,
+    "total_MiB_fp32": 13.367
+  },
+  "forward_macs": {
+    "macs": 31316325472,
+    "params": 2940801
+  },
+  "train_step_timing_ms": {
+    "mean_ms": 166.7412,
+    "std_ms": 17.5324,
+    "min_ms": 154.1048,
+    "max_ms": 208.8489,
+    "n_iter": 10
+  },
+  "train_step_peak_gpu_mem": {
+    "allocated_MiB": 1055.55,
+    "reserved_MiB": 1692.0
+  },
+  "current_gpu_mem_after_step": {
+    "allocated_MiB": 74.25,
+    "reserved_MiB": 1692.0
+  }
+}

@@ -50,18 +50,18 @@ class FewshotDatasetGenerator:
         self.all_classes = sorted(self.base_classes + self.novel_classes)
 
     def _get_class_samples(self, class_id: int, split: str = 'train') -> List[str]:
-        """获取某个类别的所有样本文件路径"""
-        # 注意：这里假设所有single-tab源文件都在 novel_source_dir 下
-        # 如果base类的源文件在其他地方，请修改此处
+        """Get all sample file paths for a class."""
+        # This assumes all single-tab source files are under novel_source_dir.
+        # Update this logic if base-class source files are stored elsewhere.
         class_dir = os.path.join(self.novel_source_dir, split, str(class_id))
         
         if not os.path.exists(class_dir):
-            # 尝试回退到 base_training_dir (视你的目录结构而定，这里保留原逻辑)
+            # Try falling back to base_training_dir if the directory layout requires it.
             # class_dir = os.path.join(self.base_training_dir, split, str(class_id))
             pass
 
         if not os.path.exists(class_dir):
-             return [] # 或者 raise error，视情况而定
+             return [] # Or raise an error, depending on the desired behavior.
         
         files = [
             os.path.join(class_dir, f) 
@@ -76,7 +76,7 @@ class FewshotDatasetGenerator:
         return data
 
     def _merge_traces(self, traces: List[Dict], overlap_ratios: Optional[List[float]] = None) -> Dict:
-        """(保持原有的合并逻辑不变)"""
+        """Keep the original merge logic unchanged."""
         num_traces = len(traces)
         if overlap_ratios is None:
             overlap_ratios = [
@@ -117,7 +117,7 @@ class FewshotDatasetGenerator:
         }
 
     def _save_support_set(self, files_map: Dict[int, List[str]], output_dir: str) -> Dict:
-        """通用方法：将指定的文件列表保存为Support集"""
+        """Save the specified file lists as the support set."""
         stats = {}
         for class_id, files in files_map.items():
             class_dir = os.path.join(output_dir, str(class_id))
@@ -134,7 +134,7 @@ class FewshotDatasetGenerator:
                                    base_files: List[str], 
                                    novel_class: int, 
                                    output_dir: str) -> str:
-        """通用方法：合成并保存一个Query样本"""
+        """Synthesize and save one query sample."""
         try:
             novel_sample = self._load_sample(novel_file)
             novel_sample['label'] = novel_class
@@ -143,11 +143,11 @@ class FewshotDatasetGenerator:
             base_class_ids = []
             for bf in base_files:
                 b_data = self._load_sample(bf)
-                # 从路径或元数据推断label，这里假设调用者保证了正确性
-                # 为了简单，我们需要知道base_file对应的class_id。
-                # 由于文件名可能不包含class信息，最好是在外部处理好label
-                # 这里我们假设base_files是随机选的，我们需要知道他们的真实label
-                # 下面的逻辑假设路径结构是 .../class_id/file.pkl
+                # Infer the label from the path or metadata; callers are expected to ensure correctness.
+                # For simplicity, we need the class_id corresponding to each base_file.
+                # Since filenames may not contain class information, handling labels upstream is preferred.
+                # Here we assume base_files are sampled randomly and recover their true labels from the path.
+                # The logic below assumes a path structure like .../class_id/file.pkl.
                 try:
                     b_label = int(os.path.basename(os.path.dirname(bf)))
                 except:
@@ -156,27 +156,27 @@ class FewshotDatasetGenerator:
                 base_samples.append(b_data)
                 base_class_ids.append(b_label)
 
-            # 组合
+            # Combine samples.
             all_samples = base_samples.copy()
             insert_pos = random.randint(0, len(all_samples))
             all_samples.insert(insert_pos, novel_sample)
             
-            # Open World: 添加类别95（如果启用）
+            # Open world: add class 95 if enabled.
             if self.add_ow_class:
-                # 获取类别95的样本
+                # Get samples from class 95.
                 ow_files = self._get_class_samples(95, 'train')
                 if ow_files:
                     ow_file = random.choice(ow_files)
                     ow_sample = self._load_sample(ow_file)
-                    ow_sample['label'] = 95  # 临时标记，后续会移除
+                    ow_sample['label'] = 95  # Temporary marker removed later.
                     
-                    # 在随机位置插入OW样本
+                    # Insert the OW sample at a random position.
                     ow_insert_pos = random.randint(0, len(all_samples))
                     all_samples.insert(ow_insert_pos, ow_sample)
             
             merged = self._merge_traces(all_samples)
             
-            # 如果添加了OW类别，从labels中移除95（保持无标签）
+            # Remove class 95 from labels if an OW class was added, keeping it unlabeled.
             final_labels = [l for l in merged['labels'] if l != 95]
             
             labels_str = "_".join(map(str, final_labels))
@@ -188,11 +188,11 @@ class FewshotDatasetGenerator:
                 pickle.dump({
                     'time': merged['time'],
                     'data': merged['data'],
-                    'labels': final_labels,  # 不包含类别95
+                    'labels': final_labels,  # Excludes class 95.
                     'novel_class': novel_class,
                     'base_classes': base_class_ids,
                     'metadata': merged['metadata'],
-                    'has_ow': self.add_ow_class  # 标记是否包含OW
+                    'has_ow': self.add_ow_class  # Marks whether the sample contains OW.
                 }, f)
             return filename
         except Exception as e:
@@ -201,10 +201,10 @@ class FewshotDatasetGenerator:
 
     def _process_train_split(self, k_shot: int, split: str):
         """
-        Train Split 生成逻辑:
-        1. 选定 K 个 Novel 样本
-        2. 生成 Query (使用选定的 Novel + 随机 Base)，并记录用到的 Base
-        3. 构建 Support (K Novel + Used Base + 补齐 Base)
+        Train split generation logic:
+        1. Select K novel samples.
+        2. Generate queries using selected novel samples plus random base samples, and record the used base samples.
+        3. Build support with K novel samples plus used base samples and backfilled base samples.
         """
         print(f"\nProcessing TRAIN split ({k_shot}-shot)...")
         
@@ -214,41 +214,41 @@ class FewshotDatasetGenerator:
         os.makedirs(support_dir, exist_ok=True)
         os.makedirs(query_dir, exist_ok=True)
 
-        # 1. 为每个 Novel 类选定 K 个样本
+        # 1. Select K samples for each novel class.
         novel_support_candidates = {}
         for c in self.novel_classes:
             files = self._get_class_samples(c, split)
             if len(files) >= k_shot:
                 novel_support_candidates[c] = random.sample(files, k_shot)
             else:
-                novel_support_candidates[c] = files # 样本不足全选
+                novel_support_candidates[c] = files # Use all samples if there are fewer than k_shot.
         
-        # 准备 Base 池
+        # Prepare the base pool.
         base_pool = {}
         for c in self.base_classes:
-            base_pool[c] = self._get_class_samples(c, 'train') # Base 始终用 train 数据
+            base_pool[c] = self._get_class_samples(c, 'train') # Base classes always use training data.
             
-        used_base_files = defaultdict(set) # 记录 query 中用到的 base 样本
+        used_base_files = defaultdict(set) # Record base samples used in queries.
         query_filenames = []
         novel_counts = defaultdict(int)
 
-        # 2. 生成 Query
-        # Train 阶段通常严格按照 K-shot，即每个 Novel 样本作为 Query 出现 1 次 (总共 K 次)
-        # 或者是 K 个 Novel 样本循环使用。根据你的描述 "每个novel class在query中出现总次数=K"
+        # 2. Generate queries.
+        # The training phase usually follows K-shot strictly: each novel sample appears once as a query for K total queries.
+        # If fewer than K novel samples are available, cycle through them so each novel class appears K times in queries.
         for novel_c, novel_files in tqdm(novel_support_candidates.items(), desc="Train Queries"):
-            # 确保生成 K 个 query
-            # 如果 novel_files 少于 K (样本不足)，需要循环采样
+            # Ensure K queries are generated.
+            # Cycle through novel_files if there are fewer than K samples.
             for i in range(k_shot):
                 novel_f = novel_files[i % len(novel_files)]
                 
-                # 随机选择 Base
+                # Randomly select base samples.
                 if self.mixed:
                     num_base = random.randint(1, 3)
                 else:
                     num_base = self.num_base_per_query
                 
                 selected_base_files = []
-                # 随机选 base 类
+                # Randomly select base classes.
                 chosen_base_classes = random.sample(self.base_classes, num_base)
                 for bc in chosen_base_classes:
                     if base_pool[bc]:
@@ -256,23 +256,23 @@ class FewshotDatasetGenerator:
                         selected_base_files.append(bf)
                         used_base_files[bc].add(bf)
                 
-                # 合成
+                # Synthesize.
                 fname = self._synthesize_and_save_query(novel_f, selected_base_files, novel_c, query_dir)
                 if fname:
                     query_filenames.append(fname)
                     novel_counts[novel_c] += 1
 
-        # 3. 构建并保存 Support
+        # 3. Build and save the support set.
         final_support_map = {}
         
-        # Novel Support: 刚才选定的那些
+        # Novel support: the samples selected above.
         for c, files in novel_support_candidates.items():
             final_support_map[c] = files
             
         # Base Support: Used + Backfill
         for c in self.base_classes:
             current_files = list(used_base_files[c])
-            # 如果不足 K 个，随机补齐
+            # Randomly backfill if fewer than K files are available.
             if len(current_files) < k_shot:
                 remaining = [f for f in base_pool[c] if f not in current_files]
                 needed = k_shot - len(current_files)
@@ -283,18 +283,18 @@ class FewshotDatasetGenerator:
             
             final_support_map[c] = current_files
 
-        # 保存 Support 文件
+        # Save support files.
         print("Saving Support Set...")
         self._save_support_set(final_support_map, support_dir)
 
-        # 保存统计
+        # Save statistics.
         self._save_stats(split, k_shot, query_filenames, novel_counts, final_support_map)
 
     def _process_test_split(self, k_shot: int, split: str):
         """
-        Test Split 生成逻辑:
-        1. Support: 随机 K 个 Novel，随机 K 个 Base (标准 K-shot)
-        2. Query: 大规模生成 (e.g. 2000 per class)，不局限于 Support，随机采样合成
+        Test split generation logic:
+        1. Support: randomly sample K novel files and K base files as standard K-shot support.
+        2. Query: generate at large scale, e.g. 2000 per class, using random synthesis not limited to support samples.
         """
         print(f"\nProcessing TEST split ({k_shot}-shot)...")
         
@@ -304,11 +304,11 @@ class FewshotDatasetGenerator:
         os.makedirs(support_dir, exist_ok=True)
         os.makedirs(query_dir, exist_ok=True)
 
-        # 1. 构建 Support (Base + Novel 都是随机采样 K 个)
+        # 1. Build support. Randomly sample K files for both base and novel classes.
         support_map = {}
         
         # Novel Support
-        novel_pool = {} # 缓存所有可用文件，用于后面Query生成
+        novel_pool = {} # Cache all available files for later query generation.
         for c in self.novel_classes:
             files = self._get_class_samples(c, split)
             novel_pool[c] = files
@@ -317,7 +317,7 @@ class FewshotDatasetGenerator:
             else:
                 support_map[c] = files
         
-        # Base Support (Test support 里的 base 也是随机 K 个即可，无需 backfill)
+        # Base support. Random K samples are sufficient for test support; no backfill needed.
         base_pool = {}
         for c in self.base_classes:
             files = self._get_class_samples(c, 'train')
@@ -330,11 +330,11 @@ class FewshotDatasetGenerator:
         print("Saving Support Set...")
         self._save_support_set(support_map, support_dir)
 
-        # 2. 生成 Query (Large Scale, Random)
+        # 2. Generate queries at large scale with random sampling.
         query_filenames = []
         novel_counts = defaultdict(int)
         
-        # 配置测试集生成的数量
+        # Configure the number of generated test queries.
         TEST_QUERY_PER_CLASS = 3000//len(self.novel_classes) 
         
         for novel_c in tqdm(self.novel_classes, desc="Test Queries"):
@@ -343,10 +343,10 @@ class FewshotDatasetGenerator:
                 continue
                 
             for _ in range(TEST_QUERY_PER_CLASS):
-                # 随机选一个 Novel 样本 (不局限于 support)
+                # Randomly select a novel sample, not limited to support.
                 novel_f = random.choice(available_novel_files)
                 
-                # 随机选 Base
+                # Randomly select base samples.
                 if self.mixed:
                     num_base = random.randint(1, 3)
                 else:
@@ -358,22 +358,22 @@ class FewshotDatasetGenerator:
                     if base_pool[bc]:
                         selected_base_files.append(random.choice(base_pool[bc]))
                 
-                # 合成
+                # Synthesize.
                 fname = self._synthesize_and_save_query(novel_f, selected_base_files, novel_c, query_dir)
                 if fname:
                     query_filenames.append(fname)
                     novel_counts[novel_c] += 1
 
-        # 保存统计
+        # Save statistics.
         self._save_stats(split, k_shot, query_filenames, novel_counts, support_map)
 
     def _save_stats(self, split, k_shot, query_filenames, novel_counts, support_map):
-        # 保存 query 列表
+        # Save the query list.
         json_path = os.path.join(self.output_root, f'{k_shot}shot', split, f'fewshot_query_{split}.json')
         with open(json_path, 'w') as f:
             json.dump(query_filenames, f, indent=2)
             
-        # 保存详细统计
+        # Save detailed statistics.
         stats = {
             'k_shot': k_shot,
             'split': split,
@@ -385,7 +385,7 @@ class FewshotDatasetGenerator:
             json.dump(stats, f, indent=2)
 
     def generate_fewshot_dataset(self, k_shot: int, splits: List[str] = ['train']):
-        """入口函数"""
+        """Entry point."""
         for split in splits:
             if split == 'train':
                 self._process_train_split(k_shot, split)
@@ -405,8 +405,8 @@ def main():
     parser.add_argument('--num-base-per-query', type=int, default=2)
     parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--mixed', action='store_true')
-    parser.add_argument('--copy-base-query', action='store_true') # 注意：新逻辑暂未包含此功能的调用，如需要需在process中添加
-    parser.add_argument('--ow', action='store_true', help='添加Open World类别95到每个组合的随机位置')
+    parser.add_argument('--copy-base-query', action='store_true') # Note: the new logic does not call this feature yet; add it in process if needed.
+    parser.add_argument('--ow', action='store_true', help='Add Open World class 95 at a random position in each combination')
     args = parser.parse_args()
     
     def parse_range(s):

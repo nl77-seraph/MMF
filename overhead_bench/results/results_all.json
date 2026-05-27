@@ -1,0 +1,905 @@
+{
+  "A": {
+    "phase": "A_static_complexity",
+    "smoke": false,
+    "gpu_info": {
+      "available": true,
+      "logical_index": 0,
+      "name": "NVIDIA A100 80GB PCIe",
+      "total_memory_MiB": 81037.8,
+      "multi_processor_count": 108,
+      "cuda_capability": "8.0",
+      "torch_version": "2.4.1",
+      "cudnn_version": 90100
+    },
+    "A1_params_by_N": {
+      "5": {
+        "feature_extractor": 1054400,
+        "meta_learnet": 1332929,
+        "feature_reweighting": 0,
+        "classification_head": 1116801,
+        "total": 3504130,
+        "__full_net_check": 3504130
+      },
+      "10": {
+        "feature_extractor": 1054400,
+        "meta_learnet": 1332929,
+        "feature_reweighting": 0,
+        "classification_head": 1116801,
+        "total": 3504130,
+        "__full_net_check": 3504130
+      },
+      "30": {
+        "feature_extractor": 1054400,
+        "meta_learnet": 1332929,
+        "feature_reweighting": 0,
+        "classification_head": 1116801,
+        "total": 3504130,
+        "__full_net_check": 3504130
+      },
+      "60": {
+        "feature_extractor": 1054400,
+        "meta_learnet": 1332929,
+        "feature_reweighting": 0,
+        "classification_head": 1116801,
+        "total": 3504130,
+        "__full_net_check": 3504130
+      },
+      "90": {
+        "feature_extractor": 1054400,
+        "meta_learnet": 1332929,
+        "feature_reweighting": 0,
+        "classification_head": 1116801,
+        "total": 3504130,
+        "__full_net_check": 3504130
+      },
+      "95": {
+        "feature_extractor": 1054400,
+        "meta_learnet": 1332929,
+        "feature_reweighting": 0,
+        "classification_head": 1116801,
+        "total": 3504130,
+        "__full_net_check": 3504130
+      }
+    },
+    "A2_flops_by_N": [
+      {
+        "num_classes": 5,
+        "batch_size": 1,
+        "K_shot": 1,
+        "L_query": 20000,
+        "L_support": 10000,
+        "L_prime_backbone_out": 80,
+        "feature_extractor_macs_thop": {
+          "macs": 920225632,
+          "params": 1054400
+        },
+        "meta_learnet_macs_thop": {
+          "macs": 2320725120,
+          "params": 1316416
+        },
+        "feature_reweighting_macs_analytic": 102400,
+        "classification_head_macs_analytic": {
+          "topm_self_attn": 242483200,
+          "cross_class_attn": 2647040,
+          "mlp_classifier": 205120,
+          "head_total": 245335360
+        },
+        "total_macs_estimate": 3486388512,
+        "total_gflops_2x_macs": 6.973
+      },
+      {
+        "num_classes": 10,
+        "batch_size": 1,
+        "K_shot": 1,
+        "L_query": 20000,
+        "L_support": 10000,
+        "L_prime_backbone_out": 80,
+        "feature_extractor_macs_thop": {
+          "macs": 920225632,
+          "params": 1054400
+        },
+        "meta_learnet_macs_thop": {
+          "macs": 4641450240,
+          "params": 1316416
+        },
+        "feature_reweighting_macs_analytic": 204800,
+        "classification_head_macs_analytic": {
+          "topm_self_attn": 484966400,
+          "cross_class_attn": 5345280,
+          "mlp_classifier": 410240,
+          "head_total": 490721920
+        },
+        "total_macs_estimate": 6052602592,
+        "total_gflops_2x_macs": 12.105
+      },
+      {
+        "num_classes": 30,
+        "batch_size": 1,
+        "K_shot": 1,
+        "L_query": 20000,
+        "L_support": 10000,
+        "L_prime_backbone_out": 80,
+        "feature_extractor_macs_thop": {
+          "macs": 920225632,
+          "params": 1054400
+        },
+        "meta_learnet_macs_thop": {
+          "macs": 13924350720,
+          "params": 1316416
+        },
+        "feature_reweighting_macs_analytic": 614400,
+        "classification_head_macs_analytic": {
+          "topm_self_attn": 1454899200,
+          "cross_class_attn": 16650240,
+          "mlp_classifier": 1230720,
+          "head_total": 1472780160
+        },
+        "total_macs_estimate": 16317970912,
+        "total_gflops_2x_macs": 32.636
+      },
+      {
+        "num_classes": 60,
+        "batch_size": 1,
+        "K_shot": 1,
+        "L_query": 20000,
+        "L_support": 10000,
+        "L_prime_backbone_out": 80,
+        "feature_extractor_macs_thop": {
+          "macs": 920225632,
+          "params": 1054400
+        },
+        "meta_learnet_macs_thop": {
+          "macs": 27848701440,
+          "params": 1316416
+        },
+        "feature_reweighting_macs_analytic": 1228800,
+        "classification_head_macs_analytic": {
+          "topm_self_attn": 2909798400,
+          "cross_class_attn": 35143680,
+          "mlp_classifier": 2461440,
+          "head_total": 2947403520
+        },
+        "total_macs_estimate": 31717559392,
+        "total_gflops_2x_macs": 63.435
+      },
+      {
+        "num_classes": 90,
+        "batch_size": 1,
+        "K_shot": 1,
+        "L_query": 20000,
+        "L_support": 10000,
+        "L_prime_backbone_out": 80,
+        "feature_extractor_macs_thop": {
+          "macs": 920225632,
+          "params": 1054400
+        },
+        "meta_learnet_macs_thop": {
+          "macs": 41773052160,
+          "params": 1316416
+        },
+        "feature_reweighting_macs_analytic": 1843200,
+        "classification_head_macs_analytic": {
+          "topm_self_attn": 4364697600,
+          "cross_class_attn": 55480320,
+          "mlp_classifier": 3692160,
+          "head_total": 4423870080
+        },
+        "total_macs_estimate": 47118991072,
+        "total_gflops_2x_macs": 94.238
+      },
+      {
+        "num_classes": 95,
+        "batch_size": 1,
+        "K_shot": 1,
+        "L_query": 20000,
+        "L_support": 10000,
+        "L_prime_backbone_out": 80,
+        "feature_extractor_macs_thop": {
+          "macs": 920225632,
+          "params": 1054400
+        },
+        "meta_learnet_macs_thop": {
+          "macs": 44093777280,
+          "params": 1316416
+        },
+        "feature_reweighting_macs_analytic": 1945600,
+        "classification_head_macs_analytic": {
+          "topm_self_attn": 4607180800,
+          "cross_class_attn": 59048960,
+          "mlp_classifier": 3897280,
+          "head_total": 4670127040
+        },
+        "total_macs_estimate": 49686075552,
+        "total_gflops_2x_macs": 99.372
+      }
+    ],
+    "A3_checkpoint_size": {
+      "num_classes": 90,
+      "fp32_path": "/root/works/MMF-1029-simple/overhead_bench/artifacts/ckpt_fp32_N90.pth",
+      "fp32_MiB": 13.4424,
+      "fp16_path": "/root/works/MMF-1029-simple/overhead_bench/artifacts/ckpt_fp16_N90.pth",
+      "fp16_MiB": 6.7424,
+      "reweighting_bank_MiB_fp32": 0.0879,
+      "reweighting_bank_MiB_fp16": 0.0439
+    },
+    "A4_big_O_formula": "Per-query MACs ≈ Θ(L·C0·k) + N·K·Θ(L_s·C0·k) + Θ(N·C·L')   # dynamic reweighting (1×1 depthwise) + Θ(N·T·(L'·C^2 + L'^2·C))                 # Top-m self-attn, T=num_topm_layers + Θ(X·(N·C^2 + N^2·C))                     # Cross-class MHSA, X=num_cross_layers + Θ(N·C^2).                                 # Per-class MLP\nDominant scaling terms: (i) Top-m self-attn is the main linear-in-N term, (ii) Cross-class MHSA is the only quadratic-in-N term. When W_c is cached, the meta_learnet term (N·K·Θ(L_s·C0·k)) drops to zero at inference.",
+    "constants": {
+      "L_query": 20000,
+      "L_support": 10000,
+      "L_prime": 80,
+      "C_main": 256,
+      "num_heads": 8,
+      "num_topm_layers": 2,
+      "num_cross_layers": 2,
+      "K_shot_static_measurement": 1
+    }
+  },
+  "B": {
+    "phase": "B_initial_training_cost",
+    "smoke": false,
+    "config": {
+      "num_classes": 60,
+      "shots_per_class": 1,
+      "batch_size": 1,
+      "L_query": 20000,
+      "L_support": 10000,
+      "optimizer": "Adam",
+      "lr": 5e-05,
+      "weight_decay": 0.0001,
+      "loss": "BCEWithLogitsLoss"
+    },
+    "gpu_info": {
+      "available": true,
+      "logical_index": 0,
+      "name": "NVIDIA A100 80GB PCIe",
+      "total_memory_MiB": 81037.8,
+      "multi_processor_count": 108,
+      "cuda_capability": "8.0",
+      "torch_version": "2.4.1",
+      "cudnn_version": 90100
+    },
+    "cpu_mem_before": {
+      "rss_MiB": 407.68,
+      "vms_MiB": 14265.0
+    },
+    "cpu_mem_after": {
+      "rss_MiB": 1066.33,
+      "vms_MiB": 26356.94
+    },
+    "params": {
+      "total": 3504130,
+      "trainable": 3504130,
+      "total_MiB_fp32": 13.367
+    },
+    "forward_macs": {
+      "macs": 31316325472,
+      "params": 2940801
+    },
+    "train_step_timing_ms": {
+      "mean_ms": 166.7412,
+      "std_ms": 17.5324,
+      "min_ms": 154.1048,
+      "max_ms": 208.8489,
+      "n_iter": 10
+    },
+    "train_step_peak_gpu_mem": {
+      "allocated_MiB": 1055.55,
+      "reserved_MiB": 1692.0
+    },
+    "current_gpu_mem_after_step": {
+      "allocated_MiB": 74.25,
+      "reserved_MiB": 1692.0
+    }
+  },
+  "C": {
+    "phase": "C_finetune_cost",
+    "smoke": false,
+    "gpu_info": {
+      "available": true,
+      "logical_index": 0,
+      "name": "NVIDIA A100 80GB PCIe",
+      "total_memory_MiB": 81037.8,
+      "multi_processor_count": 108,
+      "cuda_capability": "8.0",
+      "torch_version": "2.4.1",
+      "cudnn_version": 90100
+    },
+    "cpu_mem_before": {
+      "rss_MiB": 516.21,
+      "vms_MiB": 14475.16
+    },
+    "cpu_mem_after_epoch": {
+      "rss_MiB": 1067.92,
+      "vms_MiB": 65905.65
+    },
+    "config": {
+      "batch_size": 1,
+      "k_shot": 20,
+      "num_classes": 90,
+      "base_classes": 60,
+      "novel_classes": 30,
+      "L_query": 20000,
+      "L_support": 10000,
+      "num_iters_per_epoch": 50,
+      "optimizer": "Adam",
+      "lr": 0.0001,
+      "weight_decay": 0.0001,
+      "loss": "BCEWithLogitsLoss",
+      "finetune_mode": "full"
+    },
+    "per_train_step": {
+      "timing_ms": {
+        "mean_ms": 523.7057,
+        "std_ms": 1.348,
+        "min_ms": 522.3956,
+        "max_ms": 526.1957,
+        "n_iter": 5
+      },
+      "peak_gpu_mem": {
+        "allocated_MiB": 25044.67,
+        "reserved_MiB": 43166.0
+      }
+    },
+    "one_epoch_simulated": {
+      "num_iters": 50,
+      "wall_clock_seconds": 26.382,
+      "per_iter_seconds_avg": 0.5276,
+      "peak_gpu_mem": {
+        "allocated_MiB": 25045.89,
+        "reserved_MiB": 43166.0
+      }
+    },
+    "C3_onboard_one_new_class": {
+      "description": "single support-branch forward on one novel class's K-shot samples",
+      "k_shot": 20,
+      "timing_ms": {
+        "mean_ms": 1.7359,
+        "std_ms": 0.0336,
+        "min_ms": 1.7091,
+        "max_ms": 1.8002,
+        "n_iter": 5
+      },
+      "peak_gpu_mem": {
+        "allocated_MiB": 480.38,
+        "reserved_MiB": 41038.0
+      }
+    },
+    "class_bank_cache": {
+      "num_classes_trained": 90,
+      "bank_size": 95,
+      "bank_shape": [
+        95,
+        256
+      ],
+      "compute_seconds_all_classes": 0.084,
+      "peak_gpu_mem_during_compute": {
+        "allocated_MiB": 9779.01,
+        "reserved_MiB": 12550.0
+      },
+      "in_memory_MiB": 0.0928,
+      "on_disk_MiB": 0.0939
+    },
+    "storage": {
+      "full_ckpt_path": "/root/works/MMF-1029-simple/overhead_bench/artifacts/c_full_ckpt.pth",
+      "full_ckpt_MiB": 40.2777,
+      "lean_ckpt_path": "/root/works/MMF-1029-simple/overhead_bench/artifacts/c_lean_ckpt.pth",
+      "lean_ckpt_MiB": 8.3218,
+      "class_bank_path": "/root/works/MMF-1029-simple/overhead_bench/artifacts/c_class_bank.pt",
+      "class_bank_MiB": 0.0939,
+      "lean_deployment_MiB_total": 8.4157,
+      "params_total": 3504130,
+      "params_lean": 2173129,
+      "params_stripped_ratio": 0.3798
+    }
+  },
+  "D": {
+    "phase": "D_cached_inference",
+    "smoke": false,
+    "gpu_info": {
+      "available": true,
+      "logical_index": 0,
+      "name": "NVIDIA A100 80GB PCIe",
+      "total_memory_MiB": 81037.8,
+      "multi_processor_count": 108,
+      "cuda_capability": "8.0",
+      "torch_version": "2.4.1",
+      "cudnn_version": 90100
+    },
+    "numerical_equivalence_check": {
+      "max_abs_diff": 0.0,
+      "max_rel_diff": 0.0,
+      "tolerance": 0.001,
+      "passed": true
+    },
+    "cpu_mem_before": {
+      "rss_MiB": 500.23,
+      "vms_MiB": 14452.32
+    },
+    "cpu_mem_after": {
+      "rss_MiB": 945.74,
+      "vms_MiB": 24967.61
+    },
+    "lean_ckpt_path": "/root/works/MMF-1029-simple/overhead_bench/artifacts/c_lean_ckpt.pth",
+    "lean_ckpt_MiB": 8.3218,
+    "class_bank_path": "/root/works/MMF-1029-simple/overhead_bench/artifacts/c_class_bank.pt",
+    "class_bank_MiB": 0.0939,
+    "inference_params_total": 2171201,
+    "config": {
+      "batch_size": 1,
+      "L_query": 20000,
+      "L_support": 10000,
+      "k_shot_for_bank": 20,
+      "N_sweep": [
+        5,
+        10,
+        30,
+        95
+      ],
+      "n_warmup": 5,
+      "n_iter": 30
+    },
+    "scalability_sweep": [
+      {
+        "N": 5,
+        "latency_ms": {
+          "mean_ms": 6.4366,
+          "std_ms": 0.016,
+          "min_ms": 6.3949,
+          "max_ms": 6.4614,
+          "n_iter": 30
+        },
+        "peak_gpu_mem": {
+          "allocated_MiB": 26.39,
+          "reserved_MiB": 554.0
+        }
+      },
+      {
+        "N": 10,
+        "latency_ms": {
+          "mean_ms": 10.4746,
+          "std_ms": 0.0347,
+          "min_ms": 10.4131,
+          "max_ms": 10.5564,
+          "n_iter": 30
+        },
+        "peak_gpu_mem": {
+          "allocated_MiB": 26.39,
+          "reserved_MiB": 50.0
+        }
+      },
+      {
+        "N": 30,
+        "latency_ms": {
+          "mean_ms": 26.685,
+          "std_ms": 0.0886,
+          "min_ms": 26.5718,
+          "max_ms": 26.9691,
+          "n_iter": 30
+        },
+        "peak_gpu_mem": {
+          "allocated_MiB": 26.39,
+          "reserved_MiB": 50.0
+        }
+      },
+      {
+        "N": 95,
+        "latency_ms": {
+          "mean_ms": 79.3606,
+          "std_ms": 0.4266,
+          "min_ms": 79.0426,
+          "max_ms": 81.1858,
+          "n_iter": 30
+        },
+        "peak_gpu_mem": {
+          "allocated_MiB": 26.6,
+          "reserved_MiB": 50.0
+        }
+      }
+    ]
+  },
+  "E": {
+    "phase": "E_onboard_one_class",
+    "smoke": false,
+    "gpu_info": {
+      "available": true,
+      "logical_index": 0,
+      "name": "NVIDIA A100 80GB PCIe",
+      "total_memory_MiB": 81037.8,
+      "multi_processor_count": 108,
+      "cuda_capability": "8.0",
+      "torch_version": "2.4.1",
+      "cudnn_version": 90100
+    },
+    "cpu_mem_before": {
+      "rss_MiB": 406.76,
+      "vms_MiB": 14265.0
+    },
+    "cpu_mem_after": {
+      "rss_MiB": 868.6,
+      "vms_MiB": 29175.3
+    },
+    "config": {
+      "base_classes": 60,
+      "novel_classes": 30,
+      "k_shot": 20,
+      "L_support": 10000,
+      "finetune_mode": "head_only (meta path frozen)"
+    },
+    "freeze_summary": {
+      "frozen_params": 2387329,
+      "total_params": 3504130,
+      "frozen_ratio": 0.6813
+    },
+    "E1_single_class_onboarding": {
+      "timing_ms": {
+        "mean_ms": 1.4137,
+        "std_ms": 0.042,
+        "min_ms": 1.3834,
+        "max_ms": 1.538,
+        "n_iter": 20
+      },
+      "peak_gpu_mem": {
+        "allocated_MiB": 122.28,
+        "reserved_MiB": 138.0
+      },
+      "base_bank_MiB": 0.0586,
+      "final_bank_MiB": 0.0879,
+      "per_class_storage_bytes_fp32": 1024
+    },
+    "E2_bank_growth": [
+      {
+        "step": 1,
+        "bank_size_after": 61,
+        "peak_gpu_mem": {
+          "allocated_MiB": 123.81,
+          "reserved_MiB": 140.0
+        }
+      },
+      {
+        "step": 2,
+        "bank_size_after": 62,
+        "peak_gpu_mem": {
+          "allocated_MiB": 123.81,
+          "reserved_MiB": 140.0
+        }
+      },
+      {
+        "step": 3,
+        "bank_size_after": 63,
+        "peak_gpu_mem": {
+          "allocated_MiB": 123.81,
+          "reserved_MiB": 140.0
+        }
+      },
+      {
+        "step": 4,
+        "bank_size_after": 64,
+        "peak_gpu_mem": {
+          "allocated_MiB": 123.81,
+          "reserved_MiB": 140.0
+        }
+      },
+      {
+        "step": 5,
+        "bank_size_after": 65,
+        "peak_gpu_mem": {
+          "allocated_MiB": 123.81,
+          "reserved_MiB": 140.0
+        }
+      },
+      {
+        "step": 6,
+        "bank_size_after": 66,
+        "peak_gpu_mem": {
+          "allocated_MiB": 123.81,
+          "reserved_MiB": 140.0
+        }
+      },
+      {
+        "step": 7,
+        "bank_size_after": 67,
+        "peak_gpu_mem": {
+          "allocated_MiB": 123.81,
+          "reserved_MiB": 140.0
+        }
+      },
+      {
+        "step": 8,
+        "bank_size_after": 68,
+        "peak_gpu_mem": {
+          "allocated_MiB": 123.81,
+          "reserved_MiB": 140.0
+        }
+      },
+      {
+        "step": 9,
+        "bank_size_after": 69,
+        "peak_gpu_mem": {
+          "allocated_MiB": 123.81,
+          "reserved_MiB": 140.0
+        }
+      },
+      {
+        "step": 10,
+        "bank_size_after": 70,
+        "peak_gpu_mem": {
+          "allocated_MiB": 123.81,
+          "reserved_MiB": 140.0
+        }
+      },
+      {
+        "step": 11,
+        "bank_size_after": 71,
+        "peak_gpu_mem": {
+          "allocated_MiB": 123.81,
+          "reserved_MiB": 140.0
+        }
+      },
+      {
+        "step": 12,
+        "bank_size_after": 72,
+        "peak_gpu_mem": {
+          "allocated_MiB": 123.81,
+          "reserved_MiB": 140.0
+        }
+      },
+      {
+        "step": 13,
+        "bank_size_after": 73,
+        "peak_gpu_mem": {
+          "allocated_MiB": 123.81,
+          "reserved_MiB": 140.0
+        }
+      },
+      {
+        "step": 14,
+        "bank_size_after": 74,
+        "peak_gpu_mem": {
+          "allocated_MiB": 123.81,
+          "reserved_MiB": 140.0
+        }
+      },
+      {
+        "step": 15,
+        "bank_size_after": 75,
+        "peak_gpu_mem": {
+          "allocated_MiB": 123.81,
+          "reserved_MiB": 140.0
+        }
+      },
+      {
+        "step": 16,
+        "bank_size_after": 76,
+        "peak_gpu_mem": {
+          "allocated_MiB": 123.81,
+          "reserved_MiB": 140.0
+        }
+      },
+      {
+        "step": 17,
+        "bank_size_after": 77,
+        "peak_gpu_mem": {
+          "allocated_MiB": 123.81,
+          "reserved_MiB": 140.0
+        }
+      },
+      {
+        "step": 18,
+        "bank_size_after": 78,
+        "peak_gpu_mem": {
+          "allocated_MiB": 123.81,
+          "reserved_MiB": 140.0
+        }
+      },
+      {
+        "step": 19,
+        "bank_size_after": 79,
+        "peak_gpu_mem": {
+          "allocated_MiB": 123.81,
+          "reserved_MiB": 140.0
+        }
+      },
+      {
+        "step": 20,
+        "bank_size_after": 80,
+        "peak_gpu_mem": {
+          "allocated_MiB": 123.81,
+          "reserved_MiB": 140.0
+        }
+      },
+      {
+        "step": 21,
+        "bank_size_after": 81,
+        "peak_gpu_mem": {
+          "allocated_MiB": 123.81,
+          "reserved_MiB": 140.0
+        }
+      },
+      {
+        "step": 22,
+        "bank_size_after": 82,
+        "peak_gpu_mem": {
+          "allocated_MiB": 123.81,
+          "reserved_MiB": 140.0
+        }
+      },
+      {
+        "step": 23,
+        "bank_size_after": 83,
+        "peak_gpu_mem": {
+          "allocated_MiB": 123.81,
+          "reserved_MiB": 140.0
+        }
+      },
+      {
+        "step": 24,
+        "bank_size_after": 84,
+        "peak_gpu_mem": {
+          "allocated_MiB": 123.81,
+          "reserved_MiB": 140.0
+        }
+      },
+      {
+        "step": 25,
+        "bank_size_after": 85,
+        "peak_gpu_mem": {
+          "allocated_MiB": 123.81,
+          "reserved_MiB": 140.0
+        }
+      },
+      {
+        "step": 26,
+        "bank_size_after": 86,
+        "peak_gpu_mem": {
+          "allocated_MiB": 123.81,
+          "reserved_MiB": 140.0
+        }
+      },
+      {
+        "step": 27,
+        "bank_size_after": 87,
+        "peak_gpu_mem": {
+          "allocated_MiB": 123.81,
+          "reserved_MiB": 140.0
+        }
+      },
+      {
+        "step": 28,
+        "bank_size_after": 88,
+        "peak_gpu_mem": {
+          "allocated_MiB": 123.81,
+          "reserved_MiB": 140.0
+        }
+      },
+      {
+        "step": 29,
+        "bank_size_after": 89,
+        "peak_gpu_mem": {
+          "allocated_MiB": 123.81,
+          "reserved_MiB": 140.0
+        }
+      },
+      {
+        "step": 30,
+        "bank_size_after": 90,
+        "peak_gpu_mem": {
+          "allocated_MiB": 123.81,
+          "reserved_MiB": 140.0
+        }
+      }
+    ],
+    "analysis_note": "When feature_extractor + meta_learnet are frozen (finetune_mode='head_only' or a custom frozen-backbone policy), base class W_c values are stable across training. Therefore a base_class_bank.pt computed once at the end of base training can be reused throughout fine-tuning, and onboarding a new monitored class only requires one support-branch forward on its K support samples (memory and time both O(1) w.r.t. existing bank size)."
+  },
+  "F": {
+    "phase": "F_ARES_baseline_one_vs_all",
+    "smoke": false,
+    "gpu_info": {
+      "available": true,
+      "logical_index": 0,
+      "name": "NVIDIA A100 80GB PCIe",
+      "total_memory_MiB": 81037.8,
+      "multi_processor_count": 108,
+      "cuda_capability": "8.0",
+      "torch_version": "2.4.1",
+      "cudnn_version": 90100
+    },
+    "cpu_mem_before": {
+      "rss_MiB": 743.63,
+      "vms_MiB": 18393.85
+    },
+    "cpu_mem_after": {
+      "rss_MiB": 1234.21,
+      "vms_MiB": 20847.69
+    },
+    "config": {
+      "num_monitored": 95,
+      "N_sweep": [
+        5,
+        10,
+        30,
+        95
+      ],
+      "seq_len": 10000,
+      "max_len": 32,
+      "num_samples_per_model": 256,
+      "batch_size": 64,
+      "lr": 0.0014,
+      "weight_decay": 0.005,
+      "formulation": "one-vs-all; N independent binary Trans-WF classifiers (ARES paper Sec IV.A)"
+    },
+    "training": {
+      "num_monitored": 95,
+      "num_samples_per_model": 256,
+      "batch_size": 64,
+      "per_model_params": 2544929,
+      "total_params_all_models": 241768255,
+      "total_saved_MiB": 926.117,
+      "avg_per_model_ckpt_MiB": 9.7486,
+      "train_wallclock_seconds": 12.415,
+      "per_model_train_seconds_mean": 0.0807,
+      "peak_gpu_mem_during_training": {
+        "allocated_MiB": 1005.01,
+        "reserved_MiB": 1612.0
+      }
+    },
+    "inference_scalability": [
+      {
+        "N": 5,
+        "latency_ms": {
+          "mean_ms": 12.6915,
+          "std_ms": 0.1063,
+          "min_ms": 12.5307,
+          "max_ms": 12.8819,
+          "n_iter": 10
+        },
+        "peak_gpu_mem": {
+          "allocated_MiB": 963.32,
+          "reserved_MiB": 2344.0
+        }
+      },
+      {
+        "N": 10,
+        "latency_ms": {
+          "mean_ms": 25.8202,
+          "std_ms": 0.6213,
+          "min_ms": 25.1955,
+          "max_ms": 27.0223,
+          "n_iter": 10
+        },
+        "peak_gpu_mem": {
+          "allocated_MiB": 963.32,
+          "reserved_MiB": 978.0
+        }
+      },
+      {
+        "N": 30,
+        "latency_ms": {
+          "mean_ms": 80.4004,
+          "std_ms": 5.3272,
+          "min_ms": 75.6347,
+          "max_ms": 92.0218,
+          "n_iter": 10
+        },
+        "peak_gpu_mem": {
+          "allocated_MiB": 963.33,
+          "reserved_MiB": 978.0
+        }
+      },
+      {
+        "N": 95,
+        "latency_ms": {
+          "mean_ms": 245.974,
+          "std_ms": 3.2805,
+          "min_ms": 243.1672,
+          "max_ms": 252.8901,
+          "n_iter": 10
+        },
+        "peak_gpu_mem": {
+          "allocated_MiB": 963.36,
+          "reserved_MiB": 978.0
+        }
+      }
+    ]
+  }
+}

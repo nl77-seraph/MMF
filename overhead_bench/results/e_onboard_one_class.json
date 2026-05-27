@@ -1,0 +1,293 @@
+{
+  "phase": "E_onboard_one_class",
+  "smoke": false,
+  "gpu_info": {
+    "available": true,
+    "logical_index": 0,
+    "name": "NVIDIA A100 80GB PCIe",
+    "total_memory_MiB": 81037.8,
+    "multi_processor_count": 108,
+    "cuda_capability": "8.0",
+    "torch_version": "2.4.1",
+    "cudnn_version": 90100
+  },
+  "cpu_mem_before": {
+    "rss_MiB": 406.76,
+    "vms_MiB": 14265.0
+  },
+  "cpu_mem_after": {
+    "rss_MiB": 868.6,
+    "vms_MiB": 29175.3
+  },
+  "config": {
+    "base_classes": 60,
+    "novel_classes": 30,
+    "k_shot": 20,
+    "L_support": 10000,
+    "finetune_mode": "head_only (meta path frozen)"
+  },
+  "freeze_summary": {
+    "frozen_params": 2387329,
+    "total_params": 3504130,
+    "frozen_ratio": 0.6813
+  },
+  "E1_single_class_onboarding": {
+    "timing_ms": {
+      "mean_ms": 1.4137,
+      "std_ms": 0.042,
+      "min_ms": 1.3834,
+      "max_ms": 1.538,
+      "n_iter": 20
+    },
+    "peak_gpu_mem": {
+      "allocated_MiB": 122.28,
+      "reserved_MiB": 138.0
+    },
+    "base_bank_MiB": 0.0586,
+    "final_bank_MiB": 0.0879,
+    "per_class_storage_bytes_fp32": 1024
+  },
+  "E2_bank_growth": [
+    {
+      "step": 1,
+      "bank_size_after": 61,
+      "peak_gpu_mem": {
+        "allocated_MiB": 123.81,
+        "reserved_MiB": 140.0
+      }
+    },
+    {
+      "step": 2,
+      "bank_size_after": 62,
+      "peak_gpu_mem": {
+        "allocated_MiB": 123.81,
+        "reserved_MiB": 140.0
+      }
+    },
+    {
+      "step": 3,
+      "bank_size_after": 63,
+      "peak_gpu_mem": {
+        "allocated_MiB": 123.81,
+        "reserved_MiB": 140.0
+      }
+    },
+    {
+      "step": 4,
+      "bank_size_after": 64,
+      "peak_gpu_mem": {
+        "allocated_MiB": 123.81,
+        "reserved_MiB": 140.0
+      }
+    },
+    {
+      "step": 5,
+      "bank_size_after": 65,
+      "peak_gpu_mem": {
+        "allocated_MiB": 123.81,
+        "reserved_MiB": 140.0
+      }
+    },
+    {
+      "step": 6,
+      "bank_size_after": 66,
+      "peak_gpu_mem": {
+        "allocated_MiB": 123.81,
+        "reserved_MiB": 140.0
+      }
+    },
+    {
+      "step": 7,
+      "bank_size_after": 67,
+      "peak_gpu_mem": {
+        "allocated_MiB": 123.81,
+        "reserved_MiB": 140.0
+      }
+    },
+    {
+      "step": 8,
+      "bank_size_after": 68,
+      "peak_gpu_mem": {
+        "allocated_MiB": 123.81,
+        "reserved_MiB": 140.0
+      }
+    },
+    {
+      "step": 9,
+      "bank_size_after": 69,
+      "peak_gpu_mem": {
+        "allocated_MiB": 123.81,
+        "reserved_MiB": 140.0
+      }
+    },
+    {
+      "step": 10,
+      "bank_size_after": 70,
+      "peak_gpu_mem": {
+        "allocated_MiB": 123.81,
+        "reserved_MiB": 140.0
+      }
+    },
+    {
+      "step": 11,
+      "bank_size_after": 71,
+      "peak_gpu_mem": {
+        "allocated_MiB": 123.81,
+        "reserved_MiB": 140.0
+      }
+    },
+    {
+      "step": 12,
+      "bank_size_after": 72,
+      "peak_gpu_mem": {
+        "allocated_MiB": 123.81,
+        "reserved_MiB": 140.0
+      }
+    },
+    {
+      "step": 13,
+      "bank_size_after": 73,
+      "peak_gpu_mem": {
+        "allocated_MiB": 123.81,
+        "reserved_MiB": 140.0
+      }
+    },
+    {
+      "step": 14,
+      "bank_size_after": 74,
+      "peak_gpu_mem": {
+        "allocated_MiB": 123.81,
+        "reserved_MiB": 140.0
+      }
+    },
+    {
+      "step": 15,
+      "bank_size_after": 75,
+      "peak_gpu_mem": {
+        "allocated_MiB": 123.81,
+        "reserved_MiB": 140.0
+      }
+    },
+    {
+      "step": 16,
+      "bank_size_after": 76,
+      "peak_gpu_mem": {
+        "allocated_MiB": 123.81,
+        "reserved_MiB": 140.0
+      }
+    },
+    {
+      "step": 17,
+      "bank_size_after": 77,
+      "peak_gpu_mem": {
+        "allocated_MiB": 123.81,
+        "reserved_MiB": 140.0
+      }
+    },
+    {
+      "step": 18,
+      "bank_size_after": 78,
+      "peak_gpu_mem": {
+        "allocated_MiB": 123.81,
+        "reserved_MiB": 140.0
+      }
+    },
+    {
+      "step": 19,
+      "bank_size_after": 79,
+      "peak_gpu_mem": {
+        "allocated_MiB": 123.81,
+        "reserved_MiB": 140.0
+      }
+    },
+    {
+      "step": 20,
+      "bank_size_after": 80,
+      "peak_gpu_mem": {
+        "allocated_MiB": 123.81,
+        "reserved_MiB": 140.0
+      }
+    },
+    {
+      "step": 21,
+      "bank_size_after": 81,
+      "peak_gpu_mem": {
+        "allocated_MiB": 123.81,
+        "reserved_MiB": 140.0
+      }
+    },
+    {
+      "step": 22,
+      "bank_size_after": 82,
+      "peak_gpu_mem": {
+        "allocated_MiB": 123.81,
+        "reserved_MiB": 140.0
+      }
+    },
+    {
+      "step": 23,
+      "bank_size_after": 83,
+      "peak_gpu_mem": {
+        "allocated_MiB": 123.81,
+        "reserved_MiB": 140.0
+      }
+    },
+    {
+      "step": 24,
+      "bank_size_after": 84,
+      "peak_gpu_mem": {
+        "allocated_MiB": 123.81,
+        "reserved_MiB": 140.0
+      }
+    },
+    {
+      "step": 25,
+      "bank_size_after": 85,
+      "peak_gpu_mem": {
+        "allocated_MiB": 123.81,
+        "reserved_MiB": 140.0
+      }
+    },
+    {
+      "step": 26,
+      "bank_size_after": 86,
+      "peak_gpu_mem": {
+        "allocated_MiB": 123.81,
+        "reserved_MiB": 140.0
+      }
+    },
+    {
+      "step": 27,
+      "bank_size_after": 87,
+      "peak_gpu_mem": {
+        "allocated_MiB": 123.81,
+        "reserved_MiB": 140.0
+      }
+    },
+    {
+      "step": 28,
+      "bank_size_after": 88,
+      "peak_gpu_mem": {
+        "allocated_MiB": 123.81,
+        "reserved_MiB": 140.0
+      }
+    },
+    {
+      "step": 29,
+      "bank_size_after": 89,
+      "peak_gpu_mem": {
+        "allocated_MiB": 123.81,
+        "reserved_MiB": 140.0
+      }
+    },
+    {
+      "step": 30,
+      "bank_size_after": 90,
+      "peak_gpu_mem": {
+        "allocated_MiB": 123.81,
+        "reserved_MiB": 140.0
+      }
+    }
+  ],
+  "analysis_note": "When feature_extractor + meta_learnet are frozen (finetune_mode='head_only' or a custom frozen-backbone policy), base class W_c values are stable across training. Therefore a base_class_bank.pt computed once at the end of base training can be reused throughout fine-tuning, and onboarding a new monitored class only requires one support-branch forward on its K support samples (memory and time both O(1) w.r.t. existing bank size)."
+}

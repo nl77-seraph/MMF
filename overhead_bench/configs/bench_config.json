@@ -1,0 +1,59 @@
+{
+  "__notes__": "Reference configuration for the full (non-smoke) benchmark run. The scripts expose equivalent CLI flags, so you can either pass them explicitly or copy these values.",
+  "common": {
+    "gpu": 1,
+    "L_query": 20000,
+    "L_support": 10000,
+    "C_feature": 256,
+    "L_prime_backbone_out": 80
+  },
+  "phase_A_static_complexity": {
+    "N_sweep": [5, 10, 30, 60, 90, 95],
+    "ckpt_N_for_disk": 90
+  },
+  "phase_B_initial_training": {
+    "num_classes": 60,
+    "batch_size": 1,
+    "shots_per_class": 1,
+    "n_warmup": 3,
+    "n_iter": 20,
+    "lr": 5e-5,
+    "weight_decay": 1e-4,
+    "loss": "BCEWithLogitsLoss"
+  },
+  "phase_C_finetune": {
+    "base_classes": 60,
+    "novel_classes": 30,
+    "k_shot": 20,
+    "batch_size": 1,
+    "num_iters_per_epoch": 200,
+    "lr": 1e-4,
+    "weight_decay": 1e-4
+  },
+  "phase_D_inference": {
+    "N_sweep": [5, 10, 30, 95],
+    "full_N": 95,
+    "k_shot": 20,
+    "n_warmup": 10,
+    "n_iter": 50
+  },
+  "phase_E_onboard_one_class": {
+    "base_classes": 60,
+    "novel_classes": 30,
+    "k_shot": 20,
+    "n_warmup": 3,
+    "n_iter": 30
+  },
+  "phase_F_ARES": {
+    "num_monitored": 95,
+    "N_sweep": [5, 10, 30, 95],
+    "seq_len": 10000,
+    "max_len": -1,
+    "num_samples_per_model": 1024,
+    "batch_size": 64,
+    "lr": 0.0014,
+    "weight_decay": 0.005,
+    "n_warmup": 5,
+    "n_iter": 30
+  }
+}

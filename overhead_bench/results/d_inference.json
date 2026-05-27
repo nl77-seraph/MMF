@@ -1,0 +1,105 @@
+{
+  "phase": "D_cached_inference",
+  "smoke": false,
+  "gpu_info": {
+    "available": true,
+    "logical_index": 0,
+    "name": "NVIDIA A100 80GB PCIe",
+    "total_memory_MiB": 81037.8,
+    "multi_processor_count": 108,
+    "cuda_capability": "8.0",
+    "torch_version": "2.4.1",
+    "cudnn_version": 90100
+  },
+  "numerical_equivalence_check": {
+    "max_abs_diff": 0.0,
+    "max_rel_diff": 0.0,
+    "tolerance": 0.001,
+    "passed": true
+  },
+  "cpu_mem_before": {
+    "rss_MiB": 500.23,
+    "vms_MiB": 14452.32
+  },
+  "cpu_mem_after": {
+    "rss_MiB": 945.74,
+    "vms_MiB": 24967.61
+  },
+  "lean_ckpt_path": "/root/works/MMF-1029-simple/overhead_bench/artifacts/c_lean_ckpt.pth",
+  "lean_ckpt_MiB": 8.3218,
+  "class_bank_path": "/root/works/MMF-1029-simple/overhead_bench/artifacts/c_class_bank.pt",
+  "class_bank_MiB": 0.0939,
+  "inference_params_total": 2171201,
+  "config": {
+    "batch_size": 1,
+    "L_query": 20000,
+    "L_support": 10000,
+    "k_shot_for_bank": 20,
+    "N_sweep": [
+      5,
+      10,
+      30,
+      95
+    ],
+    "n_warmup": 5,
+    "n_iter": 30
+  },
+  "scalability_sweep": [
+    {
+      "N": 5,
+      "latency_ms": {
+        "mean_ms": 6.4366,
+        "std_ms": 0.016,
+        "min_ms": 6.3949,
+        "max_ms": 6.4614,
+        "n_iter": 30
+      },
+      "peak_gpu_mem": {
+        "allocated_MiB": 26.39,
+        "reserved_MiB": 554.0
+      }
+    },
+    {
+      "N": 10,
+      "latency_ms": {
+        "mean_ms": 10.4746,
+        "std_ms": 0.0347,
+        "min_ms": 10.4131,
+        "max_ms": 10.5564,
+        "n_iter": 30
+      },
+      "peak_gpu_mem": {
+        "allocated_MiB": 26.39,
+        "reserved_MiB": 50.0
+      }
+    },
+    {
+      "N": 30,
+      "latency_ms": {
+        "mean_ms": 26.685,
+        "std_ms": 0.0886,
+        "min_ms": 26.5718,
+        "max_ms": 26.9691,
+        "n_iter": 30
+      },
+      "peak_gpu_mem": {
+        "allocated_MiB": 26.39,
+        "reserved_MiB": 50.0
+      }
+    },
+    {
+      "N": 95,
+      "latency_ms": {
+        "mean_ms": 79.3606,
+        "std_ms": 0.4266,
+        "min_ms": 79.0426,
+        "max_ms": 81.1858,
+        "n_iter": 30
+      },
+      "peak_gpu_mem": {
+        "allocated_MiB": 26.6,
+        "reserved_MiB": 50.0
+      }
+    }
+  ]
+}

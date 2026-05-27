@@ -1,6 +1,6 @@
 """
-增强版训练脚本
-使用EnhancedMultiMetaFingerNet进行Base Class训练
+Enhanced training script.
+Uses EnhancedMultiMetaFingerNet for base-class training.
 """
 
 import torch
@@ -23,20 +23,20 @@ from tqdm import tqdm
 import warnings
 warnings.filterwarnings('ignore')
 
-# 添加模块路径
+# Add module path.
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from data.meta_traffic_dataloader import MetaTrafficDataLoader
-from models.feature_extractors import EnhancedMultiMetaFingerNet  # 使用增强版
+from models.feature_extractors import EnhancedMultiMetaFingerNet  # Use the enhanced version.
 from utils.metrics import MultiLabelMetrics
 from utils.loss_functions import WeightedBCELoss, FocalLoss, AsymmetricLoss
 from utils.model_manager import ModelManager
 from utils.misc import *
-# GPU配置：根据实际机器修改，或通过环境变量 CUDA_VISIBLE_DEVICES 在命令行指定
+# GPU configuration: update for the local machine or set CUDA_VISIBLE_DEVICES from the command line.
 # os.environ['CUDA_VISIBLE_DEVICES'] = '0,1,2,3'
 class EnhancedTrainer:
     """
-    增强版训练器
-    与BaseClassTrainer基本相同，但使用EnhancedMultiMetaFingerNet
+    Enhanced trainer.
+    Mostly identical to BaseClassTrainer, but uses EnhancedMultiMetaFingerNet.
     """
     
     def __init__(self, config, rank=None, world_size=None):
@@ -45,13 +45,13 @@ class EnhancedTrainer:
         self.world_size = world_size if world_size is not None else 1
         self.is_distributed = world_size is not None and world_size > 1
         
-        # 设置设备
+        # Set device.
         if self.is_distributed:
             self.device = torch.device(f'cuda:{rank}')
         else:
             self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         
-        # 初始化训练组件
+        # Initialize training components.
         self.model = None
         self.train_loader = None
         self.val_loader = None
@@ -59,13 +59,13 @@ class EnhancedTrainer:
         self.optimizer = None
         self.scheduler = None
         
-        # 训练状态
+        # Training state.
         self.current_epoch = 0
         self.best_map = 0.0
         self.train_losses = []
         self.val_metrics = []
         
-        # 日志和可视化（仅主进程）
+        # Logging and visualization, only on the main process.
         self.writer = None
         self.model_manager = None
         
@@ -77,11 +77,11 @@ class EnhancedTrainer:
             print(f"   - {self.device}")
     
     def setup_data_loaders(self):
-        """设置数据加载器（支持分布式采样）"""
+        """Set up data loaders with distributed sampling support."""
         if is_main_process():
             print("\n ...")
         
-        # 训练数据加载器（随机采样模式）
+        # Training data loader in random sampling mode.
         train_loader_base = MetaTrafficDataLoader(
             query_json_path=self.config['train_query_json'],
             query_files_dir=self.config['train_query_dir'],
@@ -91,14 +91,14 @@ class EnhancedTrainer:
             support_target_length = self.config['support_target_length'],
             shots_per_class=self.config['shots_per_class'],
             batch_size=self.config['batch_size'],
-            shuffle=not self.is_distributed,  # 分布式模式下由DistributedSampler控制
+            shuffle=not self.is_distributed,  # Controlled by DistributedSampler in distributed mode.
             num_workers=self.config['num_workers'],
-            random_sampling=True  # 训练使用随机采样
+            random_sampling=True  # Use random sampling for training.
         )
         
-        # 如果是分布式训练，包装数据加载器
+        # Wrap the data loader for distributed training.
         if self.is_distributed:
-            # 分布式采样器
+            # Distributed sampler.
             self.train_sampler = DistributedSampler(
                 train_loader_base.query_dataset,
                 num_replicas=self.world_size,
@@ -106,7 +106,7 @@ class EnhancedTrainer:
                 shuffle=True
             )
             
-            # 重新创建DataLoader with DistributedSampler
+            # Recreate the DataLoader with DistributedSampler.
             from torch.utils.data import DataLoader
             train_loader_base.query_loader = DataLoader(
                 train_loader_base.query_dataset,
@@ -120,8 +120,8 @@ class EnhancedTrainer:
         
         self.train_loader = train_loader_base
         
-        # 验证数据加载器（固定采样模式）
-        # 验证数据不需要分布式采样，每个进程验证相同的数据
+        # Validation data loader in fixed sampling mode.
+        # Validation does not need distributed sampling; each process validates the same data.
         self.val_loader = MetaTrafficDataLoader(
             query_json_path=self.config['val_query_json'],
             query_files_dir=self.config['val_query_dir'],
@@ -133,7 +133,7 @@ class EnhancedTrainer:
             batch_size=self.config['val_batch_size'],
             shuffle=False,
             num_workers=self.config['num_workers'],
-            random_sampling=True  # 验证使用固定采样
+            random_sampling=True  # Use fixed sampling for validation.
         )
         
         if is_main_process():
@@ -143,19 +143,19 @@ class EnhancedTrainer:
                 print(f"   :")
     
     def setup_model(self):
-        """设置增强版模型"""
+        """Set up the enhanced model."""
         if is_main_process():
             print("\n ...")
         
-        # 使用EnhancedMultiMetaFingerNet
+        # Use EnhancedMultiMetaFingerNet.
         self.model = EnhancedMultiMetaFingerNet(
             num_classes=self.config['num_classes'],
             dropout=self.config['dropout'],
             support_blocks=self.config['support_blocks'],
-            use_se_in_df=self.config.get('use_se_in_df', False)  # 可选的DF增强
+            use_se_in_df=self.config.get('use_se_in_df', False)  # Optional DF enhancement.
         ).to(self.device)
         
-        # DDP包装
+        # Wrap with DDP.
         if self.is_distributed:
             self.model = DDP(
                 self.model,
@@ -166,7 +166,7 @@ class EnhancedTrainer:
             if is_main_process():
                 print(f"DDP")
         
-        # 计算参数量
+        # Count parameters.
         if is_main_process():
             model_for_count = self.model.module if self.is_distributed else self.model
             total_params = sum(p.numel() for p in model_for_count.parameters())
@@ -175,7 +175,7 @@ class EnhancedTrainer:
             print(f"   : {total_params:,} , {trainable_params:,}")
     
     def setup_loss_function(self):
-        """设置损失函数"""
+        """Set up the loss function."""
         if is_main_process():
             print("\n ...")
         
@@ -202,7 +202,7 @@ class EnhancedTrainer:
             print(f"   : {loss_type}")
     
     def setup_optimizer(self):
-        """设置优化器"""
+        """Set up the optimizer."""
         if is_main_process():
             print("\n ...")
         
@@ -240,7 +240,7 @@ class EnhancedTrainer:
             print(f"   : {self.config['learning_rate']}")
     
     def setup_logging(self):
-        """设置日志（仅主进程）"""
+        """Set up logging on the main process only."""
         if not is_main_process():
             return
             
@@ -261,7 +261,7 @@ class EnhancedTrainer:
         print(f"   : {self.exp_dir}")
     
     def train_epoch(self, epoch):
-        """训练一个epoch"""
+        """Train one epoch."""
         self.model.train()
         
         if self.is_distributed and self.train_sampler:
@@ -318,7 +318,7 @@ class EnhancedTrainer:
         return avg_train_loss#, train_metrics
     
     def validate_epoch(self, epoch):
-        """验证一个epoch"""
+        """Validate one epoch."""
         self.model.eval()
         val_losses = []
         all_logits = []
@@ -358,7 +358,7 @@ class EnhancedTrainer:
         return avg_val_loss, metrics
     
     def train(self):
-        """完整训练流程"""
+        """Run the full training workflow."""
         if is_main_process():
             print("\nBase Class...")
             print(f"   - {self.config['num_epochs']}")
@@ -409,7 +409,7 @@ class EnhancedTrainer:
 
 
 def run_distributed_training(rank, world_size, config):
-    """分布式训练工作函数"""
+    """Distributed training worker function."""
     try:
         setup_distributed_training(rank, world_size, config)
         
@@ -429,11 +429,11 @@ def run_distributed_training(rank, world_size, config):
 
 
 def main():
-    """主函数"""
+    """Main function."""
     
     config = get_final_config()
     setup_seed(config['seed'])
-    # 启动训练
+    # Start training.
     if config['use_distributed']:
         world_size = len(config['gpus'])
         try:
